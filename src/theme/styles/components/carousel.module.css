@@ -1,0 +1,24 @@
+:root {
+  --carousel-control-color: var(--neutral-900);
+}
+
+.controls {
+  color: var(--carousel-control-color);
+
+  background-color: transparent;
+  border: none;
+
+  .control {
+    color: var(--carousel-control-color);
+
+    background-color: transparent;
+    border: none;
+  }
+}
+
+.control {
+  &[data-inactive] {
+    opacity: 0;
+    cursor: default;
+  }
+}

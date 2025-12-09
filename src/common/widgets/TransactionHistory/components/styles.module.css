@@ -1,0 +1,19 @@
+.root {
+  position: relative;
+  border: none;
+
+  .indicator {
+    background: none;
+  }
+
+  &[data-checked='true'] {
+    .indicator {
+      border: none;
+      background-color: var(--accent-bg4);
+
+      svg {
+        color: var(--inversion-primary-content);
+      }
+    }
+  }
+}

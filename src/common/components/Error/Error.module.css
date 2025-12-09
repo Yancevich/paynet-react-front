@@ -1,0 +1,14 @@
+.error {
+  width: 100%;
+  text-transform: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  margin: 0;
+  font-weight: 700;
+  color: var(--negative-default-content);
+  background: var(--negative-bg1);
+}
+
+.icon {
+  flex-shrink: 0;
+}

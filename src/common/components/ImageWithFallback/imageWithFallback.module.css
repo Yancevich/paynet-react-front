@@ -1,0 +1,8 @@
+.placeholder {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.root {
+  background: var(--regular-bg-2);
+}

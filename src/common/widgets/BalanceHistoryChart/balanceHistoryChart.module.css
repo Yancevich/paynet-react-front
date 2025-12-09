@@ -1,0 +1,11 @@
+.container {
+    border-radius: var(--container-radius-1);
+    background-color: var(--regular-bg-1);
+    padding: var(--padding-container-md);
+
+    @media (max-width: 568px) {
+        padding: var(--padding-container-md-mobile);
+    }
+}
+
+

@@ -1,0 +1,23 @@
+[data-mantine-color-scheme='light'] {
+  --info-bg: var(--neutral-200);
+}
+
+[data-mantine-color-scheme='dark'] {
+  --info-bg: var(--neutral-300);
+}
+
+.info {
+  width: 100%;
+  text-transform: none;
+  border-radius: 12px;
+  padding: 16px 12px;
+  margin: 0;
+  font-weight: 700;
+  background: var(--info-bg);
+}
+
+.icon {
+  color: var(--blue-500);
+  flex-shrink: 0;
+  align-self: start;
+}

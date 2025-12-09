@@ -1,0 +1,6 @@
+.iconContainer {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    background-color: var(--regular-bg-2);
+}

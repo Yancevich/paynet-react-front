@@ -1,0 +1,8 @@
+.pininput {
+  font-weight: 700;
+}
+
+.pininput input {
+  font-size: 24px;
+  color: var(--accent-default-content);
+}

@@ -1,0 +1,94 @@
+:root {
+  /* Modal Defaults */
+  --modal-background: var(--elevated-bg-1);
+  --modal-border-radius: 28px;
+  --modal-max-width-desktop: 600px;
+  --modal-max-height-desktop: 800px;
+  --modal-padding-desktop: 32px 40px;
+
+  --modal-max-width-mobile: 100%;
+  --modal-max-height-mobile: 70vh;
+  --modal-padding-mobile: 28px 20px;
+  --modal-border-color: var(--regular-border-1);
+
+  --modal-mobile-top-radius: 28px;
+
+  /* Modal Close Button */
+  --modal-close-btn-size-desktop: 44px;
+  --modal-close-btn-size-mobile: 32px;
+  --modal-close-btn-radius: 50%;
+  --modal-close-btn-bg: var(--button-secondary-bg);
+  --modal-close-btn--hover-bg: var(--regular-bg-4);
+  --modal-close-btn-icon-size: 20px;
+}
+
+[data-height='auto'] {
+  .content {
+    max-height: 100%;
+  }
+}
+
+.content {
+  flex: auto;
+  width: 100%;
+  background-color: var(--modal-background);
+  border: 1px solid var(--modal-border-color);
+  max-width: var(--modal-max-width-desktop);
+  padding: var(--modal-padding-desktop);
+  border-radius: var(--modal-border-radius);
+  max-height: var(--modal-max-height-desktop);
+
+  @media (max-width: 568px) {
+    max-height: var(--modal-max-height-mobile);
+    max-width: var(--modal-max-width-mobile);
+    width: 100%;
+    height: auto;
+    padding: var(--modal-padding-mobile);
+    border-radius: var(--modal-mobile-top-radius) var(--modal-mobile-top-radius)
+      0 0;
+  }
+
+  @media (max-width: 450px) {
+    padding: 10px;
+  }
+}
+
+.inner {
+  padding: 0;
+  z-index: 999;
+  @media (max-width: 568px) {
+    align-items: flex-end;
+  }
+}
+
+.overlay {
+  background-color: var(--overlay-bg);
+}
+
+.header {
+  padding: 0;
+  background-color: var(--modal-background);
+}
+
+.close {
+  width: var(--modal-close-btn-size-desktop);
+  height: var(--modal-close-btn-size-desktop);
+  border-radius: var(--modal-close-btn-radius);
+  background: none;
+  --cb-icon-size: var(--modal-close-btn-icon-size);
+  color: var(--button-secondary-text);
+
+  &:hover {
+    background: none;
+  }
+
+  @media (max-width: 568px) {
+    background: var(--modal-close-btn-bg);
+    width: var(--modal-close-btn-size-mobile);
+    height: var(--modal-close-btn-size-mobile);
+  }
+}
+
+.body {
+  padding: 0;
+}

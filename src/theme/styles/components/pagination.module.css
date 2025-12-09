@@ -1,0 +1,28 @@
+[data-mantine-color-scheme='dark'] {
+  --pagination-text-active-color: var(--inversion-primary-content);
+}
+
+[data-mantine-color-scheme='light'] {
+  --pagination-text-active-color: var(--regular-primary-content);
+}
+
+:root {
+  --pagination-control-radius: 12px;
+  --pagination-control-size: 36px;
+  --pagination-control-hover-bg: var(--brand-100);
+  --pagination-control-disabled-bg: var(--accent-bg4);
+}
+
+.control {
+  background-color: transparent;
+  border: none;
+
+  &:hover {
+    background-color: var(--pagination-control-hover-bg);
+  }
+
+  &[data-active='true'] {
+    color: var(--pagination-text-active-color);
+    background-color: var(--accent-bg4);
+  }
+}

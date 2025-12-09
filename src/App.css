@@ -1,0 +1,67 @@
+/* Root scales & typography tokens */
+#root {
+  --font-family: 'Inter', sans-serif;
+  --second-family: 'Nunito Sans', sans-serif;
+  --third-family: 'JetBrains Mono', sans-serif;
+  --font3: 'SF Pro Text', sans-serif;
+  --font4: 'SF Pro', sans-serif;
+  --padding-page-vertical-20: clamp(8px, calc((20 / 1440) * 100vw), 32px);
+  --padding-page-horizontal-24: clamp(12px, calc((24 / 1440) * 100vw), 32px);
+  --font-title-size-24: clamp(1.5rem, 1.6667vw, 3rem);
+  --font-label-size-16: clamp(1rem, 1.11111vw, 2rem);
+  --font-template-size-12: clamp(0.75rem, 0.83333vw, 2rem);
+}
+
+/* Light theme wrapper background */
+[data-mantine-color-scheme='light'] {
+  .wrapper {
+    background-color: var(--page-bg);
+  }
+}
+
+/* Shell layout */
+.wrapper {
+  display: grid;
+  grid-template-columns: clamp(160px, calc((240 / 1440) * 100%), 300px) 1fr;
+  height: 100vh;
+  background-color: var(--regular-page-bg, #0d0d0d);
+}
+
+.wrapper.collapsed {
+  grid-template-columns: 50px 1fr;
+}
+
+/* Fallback when wrapper has only child */
+.wrapper:has(> :only-child) {
+  grid-template-columns: 1fr;
+}
+
+.wrapper:has(> :only-child) > :only-child {
+  grid-column: 1 / -1;
+}
+
+/* Suspense fallback */
+.app__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: var(--font-family);
+  color: var(--regular-primary-content, #ffffff);
+}
+
+/* Mobile adjustments */
+@media (max-width: 601px) {
+  .wrapper {
+    display: flex;
+    flex-direction: column-reverse;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .collapsed {
+    display: flex;
+    flex-direction: column-reverse;
+    overflow: hidden;
+  }
+}

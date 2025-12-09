@@ -1,0 +1,22 @@
+:root {
+  /* Radius's */
+  --container-radius-1: 28px;
+  --container-radius-2: 8px;
+
+  /* Paddings */
+  --padding-container-sm: 16px;
+  --padding-container-md: 28px;
+  --padding-container-md-mobile: 20px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+}

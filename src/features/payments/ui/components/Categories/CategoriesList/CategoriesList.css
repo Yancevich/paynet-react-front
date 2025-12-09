@@ -1,0 +1,42 @@
+/* Categories panel */
+.categories {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.2vw, 12px);
+  flex: 0 0 clamp(180px, calc((220 / 1440) * 100vw), 220px);
+  min-width: 150px;
+  padding-right: clamp(10px, 1.4vw, 16px);
+  border-right: solid 1px var(--regular-border-1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.categories * {
+  max-width: 100%;
+}
+
+.categories::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 601px) {
+  .categories {
+    padding: 0 16px;
+    flex-direction: row;
+    height: fit-content;
+    flex: 0 0 auto;
+    max-width: 100%;
+    gap: 8px;
+    border-right: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
+  }
+}

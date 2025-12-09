@@ -1,0 +1,18 @@
+.directionIcon {
+    border-radius: 50%;
+    background-color: var(--regular-bg-3);
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    left: calc(50% - 16px);
+    top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.reviewDetailContainer {
+    padding: 12px;
+    border-radius: 12px;
+    background-color: var(--regular-bg-2);
+}

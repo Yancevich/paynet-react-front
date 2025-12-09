@@ -1,0 +1,9 @@
+.option {
+    padding: 0;
+    margin-bottom: 8px;
+    font-size: var(--text-font-size-md);
+
+    &:hover {
+        background: var(--regular-bg-1);
+    }
+}

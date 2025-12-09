@@ -1,0 +1,25 @@
+.button {
+  width: 100%;
+  display: flex;
+  padding-left: 16px;
+  padding-right: 16px;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px;
+  border-radius: 12px;
+  border: var(--input-border);
+  background: var(--button-secondary-bg);
+
+  &:hover {
+    border: var(--input-border-focus);
+  }
+
+  &[disabled] {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.title {
+  font-weight: 700;
+}

@@ -1,0 +1,154 @@
+:root {
+  --text-font-size-xs: 10px;
+  --text-font-size-sm: 12px;
+  --text-font-size-md: 14px;
+  --text-font-size-lg: 16px;
+  --text-font-size-xl: 18px;
+  --text-font-size-2xl: 24px;
+  --text-font-size-3xl: 36px;
+
+  --text-line-height-xs: 14px;
+  --text-line-height-sm: 16px;
+  --text-line-height-md: 20px;
+  --text-line-height-lg: 22px;
+  --text-line-height-xl: 24px;
+  --text-line-height-2xl: 28px;
+  --text-line-height-3xl: 40px;
+
+  --text-font-size-mobile-xs: 8px;
+  --text-font-size-mobile-sm: 10px;
+  --text-font-size-mobile-md: 12px;
+  --text-font-size-mobile-lg: 14px;
+  --text-font-size-mobile-xl: 16px;
+  --text-font-size-mobile-2xl: 24px;
+  --text-font-size-mobile-3xl: 28px;
+
+  --text-line-height-mobile-xs: 12px;
+  --text-line-height-mobile-sm: 14px;
+  --text-line-height-mobile-md: 16px;
+  --text-line-height-mobile-lg: 20px;
+  --text-line-height-mobile-xl: 22px;
+  --text-line-height-mobile-2xl: 22px;
+  --text-line-height-mobile-3xl: 22px;
+
+  --text-mobile-breakpoint: 568px;
+
+  --text-color: var(--regular-primary-content);
+  --text-font-weight-medium: 500;
+  --text-font-weight-bold: 600;
+}
+
+.root {
+  &[data-hidden='true'] {
+    position: relative;
+    visibility: hidden;
+    text-shadow: none;
+
+    &::after {
+      font-size: inherit;
+      display: block !important;
+      line-height: inherit;
+      color: inherit;
+      visibility: visible;
+      position: absolute;
+      content: '***';
+      right: 0;
+      top: 50%;
+      transform: translateY(-40%);
+      width: 100%;
+      height: 100%;
+    }
+  }
+  &[data-size='2xl'] {
+    font-size: var(--text-font-size-2xl);
+    line-height: var(--text-line-height-2xl);
+    color: var(--text-color);
+    font-weight: var(--text-font-weight-medium);
+
+    @media (max-width: 568px) {
+      font-size: var(--text-font-size-mobile-2xl);
+      line-height: var(--text-line-height-mobile-2xl);
+      color: var(--text-color);
+      font-weight: var(--text-font-weight-medium);
+    }
+  }
+
+  &[data-size='3xl'] {
+    font-size: var(--text-font-size-3xl);
+    line-height: var(--text-line-height-3xl);
+    color: var(--text-color);
+    font-weight: var(--text-font-weight-bold);
+
+    @media (max-width: 568px) {
+      font-size: var(--text-font-size-mobile-3xl);
+      line-height: var(--text-line-height-mobile-3xl);
+      color: var(--text-color);
+      font-weight: var(--text-font-weight-medium);
+    }
+  }
+
+  &[data-size='xs'] {
+    font-size: var(--text-font-size-xs);
+    line-height: var(--text-line-height-xs);
+    color: var(--text-color);
+    font-weight: var(--text-font-weight-bold);
+
+    @media (max-width: 568px) {
+      font-size: var(--text-font-size-mobile-xs);
+      line-height: var(--text-line-height-mobile-xs);
+      font-weight: var(--text-font-weight-bold);
+    }
+  }
+
+  &[data-size='sm'] {
+    font-size: var(--text-font-size-sm);
+    line-height: var(--text-line-height-sm);
+    color: var(--text-color);
+    font-weight: var(--text-font-weight-medium);
+
+    @media (max-width: 568px) {
+      font-size: var(--text-font-size-mobile-sm);
+      line-height: var(--text-line-height-mobile-sm);
+      font-weight: var(--text-font-weight-medium);
+    }
+  }
+
+  &[data-size='md'] {
+    font-size: var(--text-font-size-md);
+    line-height: var(--text-line-height-md);
+    color: var(--text-color);
+    font-weight: var(--text-font-weight-medium);
+
+    @media (max-width: 568px) {
+      font-size: var(--text-font-size-mobile-md);
+      line-height: var(--text-line-height-mobile-md);
+      font-weight: var(--text-font-weight-medium);
+    }
+  }
+
+  &[data-size='lg'] {
+    font-size: var(--text-font-size-lg);
+    line-height: var(--text-line-height-lg);
+    color: var(--text-color);
+    font-weight: var(--text-font-weight-medium);
+
+    @media (max-width: 568px) {
+      font-size: var(--text-font-size-mobile-lg);
+      line-height: var(--text-line-height-mobile-lg);
+      font-weight: var(--text-font-weight-medium);
+    }
+  }
+
+  &[data-size='xl'] {
+    font-size: var(--text-font-size-xl);
+    line-height: var(--text-line-height-xl);
+    color: var(--text-color);
+    font-weight: var(--text-font-weight-medium);
+
+    @media (max-width: 568px) {
+      font-size: var(--text-font-size-mobile-xl);
+      line-height: var(--text-line-height-mobile-xl);
+      font-weight: var(--text-font-weight-medium);
+    }
+  }
+}

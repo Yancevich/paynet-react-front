@@ -1,0 +1,43 @@
+.container {
+  padding: var(--padding-container-md);
+  border-radius: var(--container-radius-1);
+  width: 100%;
+
+  &[data-status='INIT'] {
+    border: 2px solid var(--warning-border-2);
+    background-color: var(--warning-bg2);
+  }
+
+  &[data-status='RETRY'] {
+    border: 2px solid var(--warning-border-2);
+    background-color: var(--warning-bg2);
+  }
+
+  &[data-status='PENDING'] {
+    border: 2px solid var(--information-border-2);
+    background-color: var(--info-bg2);
+  }
+
+  &[data-status='REJECT'] {
+    border: 2px solid var(--negative-border-2);
+    background-color: var(--negative-bg2);
+  }
+}
+
+.icon {
+  &[data-status='INIT'] {
+    color: var(--warning-border-4);
+  }
+
+  &[data-status='RETRY'] {
+    color: var(--warning-border-4);
+  }
+
+  &[data-status='PENDING'] {
+    color: var(--information-border-4);
+  }
+
+  &[data-status='REJECT'] {
+    color: var(--negative-border-4);
+  }
+}

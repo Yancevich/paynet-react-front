@@ -1,0 +1,14 @@
+[data-mantine-color-scheme='light'] {
+  --current-payment-method-icon-bg: var(--regular-bg-3);
+}
+
+[data-mantine-color-scheme='dark'] {
+  --current-payment-method-icon-bg: var(--accent-bg2);
+}
+
+.iconContainer {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background-color: var(--current-payment-method-icon-bg);
+}

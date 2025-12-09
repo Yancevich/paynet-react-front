@@ -1,0 +1,26 @@
+.container {
+  border-radius: var(--container-radius-2);
+  background-color: var(--elevated-bg-2);
+  padding: var(--padding-container-sm);
+}
+
+.input-wrapper {
+  height: 24px;
+}
+
+.input {
+  font-size: var(--title-font-size-xl);
+  font-weight: bold;
+  color: var(--regular-primary-content);
+  text-align: right;
+
+  border: none !important;
+}
+
+.maxButton {
+  cursor: pointer;
+}
+
+.maxWidth {
+  width: 100%;
+}

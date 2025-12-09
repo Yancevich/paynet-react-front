@@ -1,0 +1,88 @@
+[data-mantine-color-scheme='light'] {
+  --stepper-color-default: var(--regular-primary-content);
+  --stepper-label-color: var(--regular-primary-content);
+  --stepper-color-disabled: var(--regular-disabled-content);
+  --stepper-bg-default: var(--blueish-70);
+  --stepper-bg-active: var(--brand-600);
+  --stepper-bg-disabled: var(--regular-bg-2);
+  --stepper-text-color: var(--regular-primary-content);
+}
+
+[data-mantine-color-scheme='dark'] {
+  --stepper-color-default: var(--inversion-primary-content);
+  --stepper-label-color: var(--regular-primary-content);
+  --stepper-color-disabled: var(--regular-disabled-content);
+  --stepper-bg-default: var(--blueish-150);
+  --stepper-bg-active: var(--brand-500);
+  --stepper-bg-disabled: var(--regular-bg-2);
+  --stepper-text-color: var(--regular-primary-content);
+}
+
+.steps {
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  overflow: auto;
+  box-sizing: border-box;
+}
+.step {
+  justify-content: center;
+  flex-shrink: 1;
+  flex-grow: 1;
+  flex-basis: 0;
+  flex-direction: column;
+  gap: 8px;
+
+  &[data-progress='true'],
+  &[data-completed='true'] {
+    .stepIcon {
+      color: var(--stepper-color-default);
+      background-color: var(--stepper-bg-active);
+    }
+
+    .stepLabel {
+      color: var(--stepper-label-color);
+    }
+  }
+}
+
+.stepIcon {
+  color: var(--stepper-color-disabled);
+  border: none;
+  background-color: var(--stepper-bg-default);
+}
+
+.stepBody {
+  margin-left: 0;
+  font-size: var(--text-font-size-lg);
+}
+
+.stepLabel {
+  color: var(--stepper-color-disabled);
+}
+
+.stepCompletedIcon {
+  color: var(--stepper-color-default);
+}
+
+.separator {
+  flex-shrink: 1;
+  flex-grow: 1;
+  flex-basis: 0;
+  min-width: 24px;
+  margin: 0;
+  background-color: var(--stepper-bg-default);
+
+  &[data-active='true'] {
+    background-color: var(--stepper-bg-active);
+  }
+
+  @media (max-width: 991px) {
+    display: inline-block;
+    min-width: 70px;
+  }
+
+  @media (max-width: 450px) {
+    min-width: 30px;
+  }
+}

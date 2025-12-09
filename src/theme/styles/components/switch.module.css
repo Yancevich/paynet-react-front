@@ -1,0 +1,54 @@
+&[data-mantine-color-scheme='light'] {
+  --active-track-background: var(--accent-default-content);
+  --no-active-track-background: var(--regular-secondary-content);
+  --thumb-color: var(--white-content-default);
+  --thumb-boxShadow: 0 0 8px 0 rgba(0, 0, 0, 0.25);
+}
+
+&[data-mantine-color-scheme='dark'] {
+  --active-track-background: var(--accent-default-content);
+  --no-active-track-background: var(--regular-secondary-content);
+  --thumb-color: var(--white-content-default);
+  --thumb-boxShadow: 0 0 8px 0 rgba(0, 0, 0, 0.25);
+}
+
+:root {
+  --switch-height-md: 24px;
+  --switch-width-md: 40px;
+  --switch-thumb-size-default: 18px;
+}
+
+.root {
+  width: var(--switch-width-md);
+  height: var(--switch-height-md);
+  border: none;
+
+  .track {
+    width: var(--switch-width-md);
+    height: var(--switch-height-md);
+    border: none;
+    background: var(--no-active-track-background);
+  }
+
+  &:has(.input:checked:disabled) {
+    opacity: 0.4;
+  }
+  .input:checked + .track {
+    background-color: var(--active-track-background);
+  }
+
+  .trackLabel {
+    cursor: pointer;
+    width: 100%;
+    padding: 0;
+  }
+
+  .thumb {
+    cursor: pointer;
+    background-color: var(--thumb-color);
+    border: var(--thumb-color);
+    width: var(--switch-thumb-size-default);
+    height: var(--switch-thumb-size-default);
+    box-shadow: var(--thumb-boxShadow);
+  }
+}

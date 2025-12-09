@@ -1,0 +1,4 @@
+.container {
+  border-radius: var(--container-radius-1);
+  background-color: var(--regular-bg-1);
+}

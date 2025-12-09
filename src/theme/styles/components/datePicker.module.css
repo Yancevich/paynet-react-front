@@ -1,0 +1,87 @@
+[data-mantine-color-scheme='dark'] {
+  --dateInput-picker-bg: var(--regular-bg-1);
+  --day-selected-background: var(--accent-bg4);
+  --day-selected-background: var(--accent-bg4);
+  --day-selected-color: var(--regular-primary-content);
+  --weekDay-day-dateInput-color: var(--accent-bg4);
+  --weekday-dateInput-color: var(--regular-tetriary-content);
+  --day-selected-color: var(--inversion-primary-content);
+}
+
+[data-mantine-color-scheme='light'] {
+  --day-selected-background: var(--accent-bg3);
+  --day-selected-color: var(--regular-primary-content);
+  --weekDay-day-dateInput-color: var(--accent-default-content);
+  --weekday-dateInput-color: var(--regular-tetriary-content);
+  --datePicker-header-color: var(--regular-primary-content);
+}
+
+:root {
+  --date-picker-border-radius: 20px;
+  --date-picker-padding: 16px;
+}
+
+.weekday {
+  color: var(--regular-tetriary-content);
+}
+
+.timeInput {
+  height: var(--input-height-large);
+
+  input {
+    border-radius: var(--input-border-radius);
+    border: var(--input-border);
+    background-color: var(--input-bkg);
+  }
+}
+
+.submitButton {
+  background-color: var(--button-accent-bg);
+  color: var(--button-accent-text);
+
+  &:hover {
+    background-color: var(--button-accent-hover-bg);
+  }
+
+  &:active {
+    background-color: var(--button-accent-active-bg);
+  }
+}
+
+.day {
+  font-weight: 500;
+  &[data-weekend='true'] {
+    color: var(--weekDay-day-dateInput-color);
+  }
+
+  &[data-weekend='true'] {
+    color: var(--weekDay-day-dateInput-color);
+  }
+
+  &[data-disabled='true'] {
+    opacity: 0.3;
+  }
+
+  &[data-selected='true'] {
+    background-color: var(--day-selected-background);
+    color: var(--day-selected-color);
+
+    &:hover {
+      background-color: var(--day-selected-background);
+    }
+  }
+}
+
+.levelsGroup {
+  border-radius: var(--date-picker-border-radius);
+  background: var(--dateInput-picker-bg);
+}
+
+.calendarHeaderControl {
+  color: var(--datePicker-header-color);
+}
+
+.calendarHeaderLevel {
+  font-weight: 500;
+  color: var(--datePicker-header-color);
+}

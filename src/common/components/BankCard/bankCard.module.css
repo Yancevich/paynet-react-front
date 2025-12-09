@@ -1,0 +1,73 @@
+:root {
+  --account-card-fiat-bg: var(--positive-bg1);
+  --account-card-fiat-hover-border: var(--positive-bg1);
+  --account-card-crypto-bg: var(--warning-bg1);
+  --account-card-crypto-hover-border: var(--warning-bg1);
+  --account-card-bg: var(--elevated-bg-2);
+}
+
+.root {
+  width: 100%;
+  max-width: 240px;
+  height: 110px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: var(--account-card-bg);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 16px;
+
+  &[data-card-type='FROZEN'] {
+    background-image: url('/src/assets/images/frozen-bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  &[data-card-type='crypto'] {
+    background-color: var(--account-card-crypto-bg);
+    &:hover {
+      border-color: var(--account-card-crypto-hover-border);
+    }
+  }
+
+  &[data-card-type='fiat'] {
+    background: var(--account-card-fiat-bg);
+    &:hover {
+      border-color: var(--account-card-fiat-hover-border);
+    }
+  }
+
+  &[data-card-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
+.title {
+  max-width: 95%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.balance {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .root {
+    width: 150px;
+    height: 76px;
+    padding: 8px;
+  }
+
+  .title {
+    display: none;
+  }
+
+  .badge {
+    display: none;
+  }
+}

@@ -1,0 +1,40 @@
+:root {
+  --custom-carousel-bg: transparent;
+  --custom-carousel-border-color: transparent;
+}
+
+.wrapper {
+  position: relative;
+}
+
+.leftOverlay,
+.rightOverlay {
+  position: absolute;
+  width: 226px;
+  height: 100%;
+  right: 0;
+  top: 0;
+  pointer-events: none;
+
+  @media (max-width: 576px) {
+    width: 113px;
+  }
+}
+
+.leftOverlay {
+  top: 0;
+  left: 0;
+  background: linear-gradient(270deg, rgba(23, 31, 36, 0) 15.34%, #21292e 100%);
+}
+
+.rightOverlay {
+  right: 0;
+  top: 0;
+  background: linear-gradient(270deg, #21292e 15.34%, rgba(23, 31, 36, 0) 100%);
+}
+
+.control {
+  background: none;
+  border-color: transparent;
+  color: var(--carousel-control-color);
+}

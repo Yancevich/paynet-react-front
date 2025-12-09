@@ -1,0 +1,15 @@
+.button {
+  border-radius: 16px;
+  width: 223px;
+  height: 136px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--elevated-bg-2);
+
+  @media (max-width: 568px) {
+    width: 100%;
+    background: var(--elevated-bg-1);
+    box-shadow: var(--elevated-box-shadow);
+  }
+}

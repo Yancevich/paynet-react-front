@@ -1,0 +1,9 @@
+.button {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--regular-primary-content);
+}

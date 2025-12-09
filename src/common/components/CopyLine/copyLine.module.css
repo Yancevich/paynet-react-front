@@ -1,0 +1,9 @@
+.root {
+  height: 52px;
+  background-color: var(--input-bg-default);
+  border: var(--input-border-default);
+  border-radius: var(--input-border-radius);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

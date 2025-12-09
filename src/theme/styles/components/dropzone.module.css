@@ -1,0 +1,22 @@
+.root {
+  width: 100%;
+
+  padding: 16px 20px;
+  cursor: pointer;
+
+  &[data-idle] {
+    border-radius: 16px;
+    background: none;
+    border-color: var(--accent-border-4) !important;
+
+    &:hover {
+      background: var(--regular-bg-1);
+    }
+  }
+}
+
+.inner {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}

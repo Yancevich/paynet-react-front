@@ -1,0 +1,44 @@
+.control {
+  width: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  gap: 16px;
+}
+
+.label {
+  font-weight: 700;
+  font-size: var(--mantine-font-size-md);
+}
+
+.icon {
+  transition: transform 150ms ease;
+  transform: rotate(0deg);
+
+  [data-expanded] & {
+    transform: rotate(180deg);
+  }
+}
+
+.image {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.dropdown {
+  background: var(--elevated-bg-1);
+  border-radius: var(--mantine-font-size-lg);
+
+  &__item {
+    border-radius: var(--mantine-font-size-lg);
+
+    &:hover {
+      background: var(--regular-bg-3);
+    }
+  }
+}

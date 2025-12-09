@@ -1,0 +1,9 @@
+.dropdown-icon {
+    transition: transform 150ms ease;
+    transform: rotate(0deg);
+
+    [data-expanded] & {
+        transform: rotate(180deg);
+    }
+}
+

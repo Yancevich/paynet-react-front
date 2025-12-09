@@ -1,0 +1,28 @@
+:root {
+  --account-card-bg: var(--elevated-bg-2);
+  --account-card-text-color: var(--regular-tetriary-content);
+}
+
+.root {
+  cursor: pointer;
+  border-radius: 16px;
+  background: var(--account-card-bg);
+}
+
+.title {
+  color: var(--account-card-text-color);
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 768px) {
+    max-width: 100px;
+  }
+}
+
+.balance {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

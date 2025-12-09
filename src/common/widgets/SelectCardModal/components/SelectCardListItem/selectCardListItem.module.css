@@ -1,0 +1,22 @@
+[data-mantine-color-scheme='light'] {
+  --select-card-list-item-icon-bg: var(--regular-bg-3);
+  --select-card-list-item-border: var(--regular-border-2);
+}
+
+[data-mantine-color-scheme='dark'] {
+  --select-card-list-item-icon-bg: var(--accent-bg2);
+  --select-card-list-item-border: var(--regular-border-2);
+}
+
+.container {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--regular-border-2);
+}
+
+.iconContainer {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background-color: var(--select-card-list-item-icon-bg);
+}

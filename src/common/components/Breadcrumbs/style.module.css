@@ -1,0 +1,36 @@
+&[data-mantine-color-scheme='light'] {
+  --breadcrump-active-default-color: var(--brand-700);
+  --breadcrump-active-default-hover: var(--brand-800);
+  --breadcrump-default-color: var(--neutral-900);
+  --breadcrump-default-color-hover: var(--neutral-800);
+}
+
+&[data-mantine-color-scheme='dark'] {
+  --breadcrump-active-default-color: var(--brand-500);
+  --breadcrump-active-default-hover: var(--brand-400);
+  --breadcrump-default-color: var(--neutral-900);
+  --breadcrump-default-color-hover: var(--neutral-800);
+}
+
+:root {
+  --breadcrump-fw: 400;
+  --breadcrump-active-fw: 700;
+}
+
+.breadcrumb {
+  color: var(--breadcrump-default-color);
+  font-weight: var(--breadcrump-fw);
+
+  &:hover {
+    color: var(--breadcrump-default-color-hover);
+  }
+
+  &.active {
+    font-weight: var(--breadcrump-active-fw);
+    color: var(--breadcrump-active-default-color);
+
+    &:hover {
+      color: var(--breadcrump-active-default-hover);
+    }
+  }
+}

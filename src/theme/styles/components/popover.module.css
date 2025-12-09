@@ -1,0 +1,11 @@
+:root {
+  --popover-border-radius-1: 20px;
+}
+
+.dropdown {
+  background-color: var(--elevated-bg-1);
+  border: 1px solid var(--regular-border-1);
+  padding: 16px;
+  border-radius: var(--popover-border-radius-1);
+  box-shadow: var(--elevated-box-shadow);
+}

@@ -1,0 +1,5 @@
+.reviewDetailContainer {
+    padding: 8px;
+    border-radius: 12px;
+    background-color: var(--regular-bg-2);
+}

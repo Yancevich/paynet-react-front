@@ -1,0 +1,17 @@
+.notifyActions {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  right: 26px;
+  gap: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  @media (max-width: 568px) {
+    position: static;
+    margin-top: 12px;
+    flex-direction: row-reverse;
+    transform: none;
+    justify-content: flex-end;
+  }
+}

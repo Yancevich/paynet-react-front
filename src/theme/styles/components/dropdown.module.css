@@ -1,0 +1,16 @@
+:root {
+  /* Paddings */
+  --dropdown-padding-container-sm: 16px;
+  /* Radius's */
+  --dropdown-radius-1: 20px;
+}
+
+.root {
+  background: var(--regular-bg-1);
+  border-radius: var(--dropdown-radius-1);
+  padding: var(--dropdown-padding-container-sm);
+}
+
+.item {
+  padding: 0;
+}

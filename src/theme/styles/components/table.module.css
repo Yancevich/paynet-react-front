@@ -1,0 +1,17 @@
+.thead {
+  margin-bottom: 15px;
+
+  .tr {
+    color: var(--regular-tetriary-content);
+    font-weight: 500;
+    font-size: 12px;
+    border-bottom: 0;
+  }
+
+  .th {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}

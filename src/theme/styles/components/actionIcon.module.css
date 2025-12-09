@@ -1,0 +1,84 @@
+[data-mantine-color-scheme='light'] {
+  .root {
+    background-color: var(--button-secondary-bg);
+    color: var(--button-secondary-text);
+  }
+
+  .icon {
+    color: inherit;
+
+    &:hover {
+      background-color: var(--accent-bg3);
+      transition: 0.2s;
+    }
+  }
+}
+
+[data-mantine-color-scheme='dark'] {
+  .root {
+    background-color: var(--button-secondary-bg);
+    color: var(--button-secondary-text);
+  }
+
+  .icon {
+    color: inherit;
+
+    &:hover {
+      background-color: var(--accent-bg3);
+      transition: 0.2s;
+    }
+  }
+}
+
+.root {
+  /* ActionIcon disabled and loading states */
+  &[data-disabled],
+  &[data-loading] {
+    opacity: var(--button-disabled-opacity);
+  }
+
+  /* Variants (custom) */
+  &[data-variant='accent'] {
+    .icon {
+      background: var(--button-accent-bg);
+      color: var(--button-accent-text);
+
+      &:hover {
+        background: var(--button-accent-hover-bg);
+        color: var(--button-accent-hover-text);
+      }
+
+      &:active {
+        background: var(--button-accent-active-bg);
+        color: var(--button-accent-hover-text);
+      }
+    }
+  }
+
+  &[data-variant='secondary'] {
+    .icon {
+      background: var(--button-secondary-bg);
+      color: var(--button-secondary-text);
+
+      &:hover {
+        color: var(--button-secondary-hover-text);
+        background: var(--button-secondary-hover-bg);
+      }
+
+      &:active {
+        color: var(--button-secondary-hover-text);
+        background: var(--button-secondary-bg);
+      }
+    }
+  }
+
+  &[data-variant='transparent'] {
+    background: transparent;
+
+    .icon {
+      &:hover {
+        background: transparent;
+      }
+    }
+  }
+}

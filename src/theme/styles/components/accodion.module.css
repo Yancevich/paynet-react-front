@@ -1,0 +1,66 @@
+:root {
+  --accordion-bg: var(--regular-bg-2);
+  --accordion-border-radius: 12px;
+  --accodion-panel-active-border-radius: 0 0 12px 12px;
+
+  --accordion-title-fs: var(--title-font-size-md);
+  --accordion-title-fw: var(--title-font-weight);
+
+  --accordion-content-fs: var(--text-font-size-lg);
+  --accordion-content-fw: var(--text-font-size-mobile-md);
+
+  --accordion-chevron-size: 20px;
+  --accordion-label-paddings: 12px;
+  --accordion-content-paddings: 16px 20px;
+}
+
+.root {
+  width: 100%;
+  max-width: 100%;
+}
+
+.item {
+  background-color: var(--accordion-bg);
+  border-radius: var(--accordion-border-radius);
+  padding: 8px 16px;
+  border-bottom: none;
+
+  :hover {
+    background-color: var(--accordion-bg);
+    border-radius: var(--accordion-border-radius);
+  }
+
+  &[data-active='true'] {
+    .panel {
+      border-radius: var(--accodion-panel-active-border-radius);
+    }
+  }
+}
+
+.panel {
+  background-color: var(--accordion-bg);
+  border-bottom-left-radius: var(--accordion-border-radius);
+  border-bottom-right-radius: var(--accordion-border-radius);
+}
+
+.chevron {
+  width: 20px;
+  height: 20px;
+  &[data-rotate] {
+    transform: rotate(45deg);
+  }
+}
+
+.label {
+  padding-top: var(--accordion-label-paddings);
+  padding-bottom: var(--accordion-label-paddings);
+  font-size: var(--accordion-title-fs);
+  font-weight: var(--accordion-title-fw);
+}
+
+.content {
+  padding: var(--accordion-content-paddings);
+  font-size: var(--accordion-content-fs);
+  font-weight: var(--accordion-content-fw);
+  white-space: pre-line;
+}

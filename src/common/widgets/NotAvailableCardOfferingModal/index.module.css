@@ -1,0 +1,23 @@
+.container {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--regular-border-2);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.container:hover {
+  background-color: var(--regular-bg-2);
+}
+
+.iconWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50px;
+  height: 50px;
+  background: var(--yellow-200);
+  flex-shrink: 0;
+}

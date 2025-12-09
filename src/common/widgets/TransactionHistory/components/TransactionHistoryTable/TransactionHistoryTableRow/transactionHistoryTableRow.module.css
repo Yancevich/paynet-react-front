@@ -1,0 +1,7 @@
+.operationIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--regular-border-5);
+  background: var(--regular-bg-2);
+}

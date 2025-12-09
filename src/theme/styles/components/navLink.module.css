@@ -1,0 +1,102 @@
+&[data-mantine-color-scheme='light'] {
+  --navlink-sidebar-bg: transparent;
+  --navlink-sidebar-bg-hover: var(--brand-100);
+  --navlink-sidebar-bg-active: var(--brand-300);
+  --sidebar-content-color-default: var(--neutral-800);
+  --sidebar-content-color-hover: var(--neutral-900);
+  --sidebar-content-color-active: var(--neutral-900);
+  --sidebar-icon-color: var(--alpha-inverse-900);
+  --sidebar-icon-hover-color: var(--neutral-900);
+  --sidebar-icon-active-color-mobile: var(--neutral-900);
+}
+
+&[data-mantine-color-scheme='dark'] {
+  --navlink-sidebar-bg: var(--neutral-200);
+  --navlink-sidebar-bg-hover: var(--alpha-bg-1);
+  --navlink-sidebar-bg-active: var(--neutral-300);
+  --sidebar-content-color-default: var(--neutral-700);
+  --sidebar-content-color-hover: var(--neutral-900);
+  --sidebar-content-color-active: var(--brand-500);
+  --sidebar-icon-color: var(--brand-500);
+  --sidebar-icon-active-color-mobile: var(--brand-500);
+}
+
+:root {
+  --navlink-border-radius: 20px;
+  --navlink-min-width: 44px;
+  --label-font-weight: 600;
+  --label-font-size: 14px;
+}
+
+.root {
+  background-color: var(--navlink-sidebar-bg);
+  border-radius: var(--button-radius-lg);
+  height: 44px;
+  min-width: var(--navlink-min-width);
+
+  .label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: var(--label-font-weight);
+    font-size: var(--label-font-size);
+    color: var(--sidebar-content-color-default);
+  }
+
+  .section {
+    color: var(--sidebar-content-color-default);
+  }
+
+  &:hover {
+    background-color: var(--navlink-sidebar-bg-hover);
+
+    .label {
+      color: var(--sidebar-content-color-hover);
+    }
+
+    .section {
+      color: var(--sidebar-content-color-hover);
+    }
+  }
+
+  &[data-active='true'] {
+    background: var(--navlink-sidebar-bg-active);
+
+    .label {
+      color: var(--sidebar-content-color-active);
+    }
+
+    .section {
+      color: var(--sidebar-icon-active-color-mobile);
+    }
+  }
+
+  &[data-mobile='true'] {
+    background-color: transparent;
+    width: auto;
+    min-height: 40px;
+    display: flex;
+    flex-direction: column;
+
+    .label {
+      font-size: 10px;
+    }
+
+    &[data-active='true'] {
+      background: transparent !important;
+
+      .label {
+        color: var(--sidebar-content-color-active);
+      }
+      .section {
+        color: var(--sidebar-icon-active-color-mobile);
+      }
+    }
+  }
+
+  &[data-opened='true'] {
+    .section[data-position='right'] {
+      display: block;
+    }
+  }
+}

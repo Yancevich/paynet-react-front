@@ -1,0 +1,10 @@
+:root {
+  --custom-tooltip-bg: var(--positive-bg4);
+  --custom-tooltip-border-radius: 8px;
+}
+
+.root {
+  padding: 4px 8px;
+  background: var(--custom-tooltip-bg);
+  border-radius: var(--custom-tooltip-border-radius);
+}

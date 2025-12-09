@@ -1,0 +1,57 @@
+:root {
+  --progress-height-lg: 12px;
+  --progress-height-md: 8px;
+  --progress-height-sm: 4px;
+  --progress-height-xs: 2px;
+
+  --progress-background: var(--regular-bg-3);
+  --progress-active-background-1: var(--accent-bg4);
+  --progress-active-background-2: var(--extra-bg4);
+  --progress-active-background-3: #d8d220;
+}
+
+.root {
+  background-color: var(--progress-background);
+
+  .section {
+    background: linear-gradient(
+        var(--progress-active-background-1),
+        var(--progress-active-background-2)
+    );
+  }
+
+  &[data-size='xs'] {
+    height: var(--progress-height-xs);
+  }
+
+  &[data-size='sm'] {
+    height: var(--progress-height-sm);
+  }
+
+  &[data-size='md'] {
+    height: var(--progress-height-md);
+  }
+
+  &[data-size='lg'] {
+    height: var(--progress-height-lg);
+  }
+
+  &[data-variant='default'] {
+    .section {
+      background: linear-gradient(
+          var(--progress-active-background-1),
+          var(--progress-active-background-2)
+      );
+    }
+  }
+
+  &[data-variant='vertical-gradient'] {
+    .section {
+      background: linear-gradient(
+          90deg,
+          var(--progress-active-background-1) 0%,
+          var(--progress-active-background-3) 100%
+      );
+    }
+  }
+}

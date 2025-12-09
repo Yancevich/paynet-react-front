@@ -1,0 +1,28 @@
+[data-mantine-color-scheme='light'] {
+  --container-background: linear-gradient(
+    45deg,
+    var(--regular-bg-1) 0%,
+    var(--accent-bg3) 100%
+  );
+}
+
+[data-mantine-color-scheme='dark'] {
+  --container-background: linear-gradient(
+    45deg,
+    var(--regular-bg-1) 0%,
+    var(--accent-bg3) 100%
+  );
+}
+
+.container {
+  padding: var(--padding-container-sm);
+  border-radius: 16px;
+  background: var(--container-background);
+}
+
+.iconContainer {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-bg3);
+}

@@ -1,0 +1,347 @@
+[data-mantine-color-scheme='light'] {
+  --button-primary-bg: var(--neutral-600);
+  --button-primary-hover-bg: var(--neutral-500);
+  --button-primary-active-bg: var(--neutral-400);
+  --button-primary-text: var(--alpha-900);
+  --button-primary-hover-text: var(--alpha-inverse-700);
+
+  /* Secondary colors depend from theme */
+  --button-secondary-bg: var(--alpha-inverse-100);
+  --button-secondary-hover-bg: var(--alpha-inverse-200);
+  --button-secondary-active-bg: var(--alpha-inverse-300);
+  --button-secondary-text: var(--neutral-900);
+  --button-secondary-hover-text: var(--neutral-800);
+
+  /*Button accent colors depend from theme */
+  --button-accent-bg: var(--brand-500);
+  --button-accent-hover-bg: var(--brand-700);
+  --button-accent-active-bg: var(--brand-800);
+  --button-accent-text: var(--alpha-inverse-900);
+  --button-accent-hover-text: var(--alpha-inverse-700);
+
+  /*  Destructive button colors depend from theme */
+  --button-destructive-bg: var(--red-500);
+  --button-destructive-hover-bg: var(--red-700);
+  --button-destructive-active-bg: var(--red-800);
+
+  /*  Positive button colors depend from theme*/
+  --button-positive-bg: var(--green-500);
+  --button-positive-hover-bg: var(--green-700);
+  --button-positive-active-bg: var(--green-800);
+
+  /*  Outline button colors depend from theme*/
+  /*  Outline button colors depend from theme*/
+  --button-outline-border-default: var(--neutral-600);
+  --button-outline-border-hover: var(--neutral-700);
+  --button-outline-border-pressed: var(--neutral-800);
+
+  --button-inverse-color: var(--inversion-primary-content);
+
+  /*Ghost button */
+  --nofill-content-default: var(--neutral-900);
+  --nofill-content-hover: var(--neutral-700);
+
+  /*White button content*/
+  --white-button-content-default: var(--alpha-900);
+  --white-button-content-hover: var(--alpha-800);
+}
+
+[data-mantine-color-scheme='dark'] {
+  --button-primary-bg: var(--neutral-900);
+  --button-primary-hover-bg: var(--neutral-800);
+  --button-primary-active-bg: var(--neutral-700);
+  --button-primary-text: var(--alpha-50);
+  --button-primary-hover-text: var(--alpha-200);
+
+  --button-secondary-bg: var(--alpha-inverse-800);
+  --button-secondary-hover-bg: var(--alpha-inverse-700);
+  --button-secondary-active-bg: var(--alpha-inverse-600);
+  --button-secondary-text: var(--neutral-900);
+  --button-secondary-hover-text: var(--neutral-800);
+
+  /*Button accent colors depend from theme */
+  --button-accent-bg: var(--brand-500);
+  --button-accent-hover-bg: var(--brand-400);
+  --button-accent-active-bg: var(--brand-300);
+  --button-accent-text: var(--alpha-50);
+  --button-accent-hover-text: var(--alpha-200);
+
+  /*  Destructive button colors depend from theme */
+  --button-destructive-bg: var(--red-500);
+  --button-destructive-hover-bg: var(--red-400);
+  --button-destructive-active-bg: var(--red-300);
+  --button-destructive-text: var(--alpha-50);
+  --button-destructive-hover-text: var(--alpha-200);
+
+  /*  Positive button colors depend from theme*/
+  --button-positive-bg: var(--green-500);
+  --button-positive-hover-bg: var(--green-400);
+  --button-positive-active-bg: var(--green-300);
+  --button-positive-text: var(--alpha-50);
+  --button-positive-hover-text: var(--alpha-200);
+
+  /*  Outline button colors depend from theme*/
+  --button-outline-border-default: var(--neutral-600);
+  --button-outline-border-hover: var(--neutral-500);
+  --button-outline-border-pressed: var(--neutral-400);
+
+  /*Button primary text depends from theme*/
+
+  --button-inverse-color: var(--regular-primary-content);
+  --button-primary-text: var(--alpha-50);
+
+  /*White button content*/
+  --white-button-content-default: var(--alpha-inverse-50);
+  --white-button-content-hover: var(--alpha-inverse-100);
+}
+:root {
+  /* Sizes */
+  --button-radius-lg: 12px;
+  --button-font-size-lg: 16px;
+  --button-padding-lg: 16px;
+  --button-height-large: 52px;
+
+  --button-radius-md: 12px;
+  --button-font-size-md: 14px;
+  --button-padding-md: 12px 16px;
+  --button-height-medium: 44px;
+
+  --button-radius-sm: 1000px;
+  --button-font-size-sm: 12px;
+  --button-padding-sm: 8px 16px;
+  --button-height-small: 32px;
+
+  /* States */
+  --button-disabled-opacity: 0.4;
+}
+
+.root {
+  /* Sizes for buttons */
+  &[data-size='lg'] {
+    border-radius: var(--button-radius-lg);
+    font-size: var(--button-font-size-lg);
+    padding: var(--button-padding-lg);
+    height: var(--button-height-large);
+  }
+
+  &[data-size='md'] {
+    border-radius: var(--button-radius-md);
+    font-size: var(--button-font-size-md);
+    padding: var(--button-padding-md);
+    height: var(--button-height-medium);
+  }
+
+  &[data-size='sm'] {
+    border-radius: var(--button-radius-sm);
+    font-size: var(--button-font-size-sm);
+    padding: var(--button-padding-sm);
+    height: var(--button-height-small);
+  }
+
+  /* Button disabled and loading states */
+  &[data-disabled],
+  &[data-loading] {
+    opacity: var(--button-disabled-opacity);
+    pointer-events: none;
+  }
+
+  /* Variants */
+  &[data-variant='accent'] {
+    background-color: var(--button-accent-bg);
+    color: var(--button-accent-text);
+
+    &:hover {
+      background-color: var(--button-accent-hover-bg);
+      color: var(--button-accent-hover-text);
+    }
+
+    &:active {
+      background-color: var(--button-accent-active-bg);
+      color: var(--button-accent-hover-text);
+    }
+
+    &[data-disabled]:hover {
+      background-color: var(--button-accent-bg);
+      color: var(--button-accent-text);
+    }
+
+    &[data-loading]:hover {
+      background-color: var(--button-accent-bg);
+      color: var(--button-accent-text);
+    }
+
+    .loader span::after {
+      border-color: var(--button-accent-text) var(--button-accent-text)
+        var(--button-accent-text) transparent;
+    }
+  }
+
+  &[data-variant='primary'] {
+    background-color: var(--button-primary-bg);
+    color: var(--button-primary-text);
+
+    &:hover {
+      background-color: var(--button-primary-hover-bg);
+      color: var(--button-primary-hover-text);
+    }
+
+    &:active {
+      background-color: var(--button-primary-active-bg);
+      color: var(--button-primary-hover-text);
+    }
+
+    .loader span::after {
+      border-color: var(--button-primary-text) var(--button-primary-text)
+        var(--button-primary-text) transparent;
+    }
+
+    &[data-disabled]:hover {
+      background-color: var(--button-primary-bg);
+      color: var(--button-primary-text);
+    }
+
+    &[data-loading]:hover {
+      background-color: var(--button-primary-bg);
+      color: var(--button-primary-text);
+    }
+  }
+
+  &[data-variant='secondary'] {
+    background: var(--button-secondary-bg);
+    color: var(--button-secondary-text);
+    border-width: 0;
+
+    &:hover {
+      color: var(--button-secondary-hover-text);
+      background-color: var(--button-secondary-hover-bg);
+    }
+
+    &:active {
+      color: var(--button-secondary-hover-text);
+      background-color: var(--button-secondary-bg);
+    }
+
+    .loader span::after {
+      border-color: var(--button-secondary-text) var(--button-secondary-text)
+        var(--button-secondary-text) transparent;
+    }
+
+    &[data-disabled]:hover {
+      background: var(--button-secondary-bg);
+      color: var(--button-secondary-text);
+      border-width: 0;
+    }
+
+    &[data-loading]:hover {
+      background: var(--button-secondary-bg);
+      color: var(--button-secondary-text);
+      border-width: 0;
+    }
+  }
+
+  &[data-variant='ghost'] {
+    background: transparent;
+    color: var(--nofill-content-default);
+    border-width: 0;
+
+    &:hover {
+      color: var(--nofill-content-hover);
+    }
+
+    .loader span::after {
+      border-color: var(--button-inverse-color) var(--button-inverse-color)
+        var(--button-inverse-color) transparent;
+    }
+  }
+
+  &[data-variant='destructive'] {
+    background: var(--button-destructive-bg);
+    color: var(--white-button-content-default);
+    border-width: 0;
+
+    &:hover {
+      background-color: var(--button-destructive-hover-bg);
+      color: var(--white-button-content-hover);
+    }
+
+    &:active {
+      background-color: var(--button-destructive-active-bg);
+      color: var(--white-button-content-hover);
+    }
+
+    &[data-disabled]:hover {
+      background: var(--button-destructive-bg);
+      color: var(--white-button-content-default);
+    }
+
+    &[data-loading]:hover {
+      background: var(--button-destructive-bg);
+      color: var(--white-button-content-default);
+    }
+
+    .loader span::after {
+      border-color: var(--white-button-content-default)
+        var(--white-button-content-default) var(--white-button-content-default)
+        transparent;
+    }
+  }
+
+  &[data-variant='positive'] {
+    background: var(--button-positive-bg);
+    color: var(--button-positive-text);
+
+    &:hover {
+      background-color: var(--button-positive-hover-bg);
+      color: var(--button-positive-hover-text);
+    }
+
+    &:active {
+      background-color: var(--button-positive-active-bg);
+      color: var(--button-positive-hover-text);
+    }
+
+    &[data-disabled]:hover {
+      background: var(--button-positive-bg);
+      color: var(--button-positive-text);
+    }
+
+    &[data-loading]:hover {
+      background: var(--button-positive-bg);
+      color: var(--button-positive-text);
+    }
+
+    .loader span::after {
+      border-color: var(--button-positive-text) var(--button-positive-text)
+        var(--button-positive-text) transparent;
+    }
+  }
+
+  &[data-variant='outline'] {
+    background-color: transparent;
+    border: var(--button-outline-border-default);
+    color: var(--nofill-content-default);
+
+    &:hover {
+      border: var(--button-outline-border-hover);
+      color: var(--nofill-content-default);
+    }
+
+    &:active {
+      border: var(--button-outline-border-pressed);
+      color: var(--nofill-content-default);
+    }
+
+    .loader span::after {
+      border-color: var(--button-inverse-color) var(--button-inverse-color)
+        var(--button-inverse-color) transparent;
+    }
+
+    &[data-disabled]:hover {
+      opacity: 0.4;
+    }
+
+    &[data-loading]:hover {
+      opacity: 0.4;
+    }
+  }
+}

@@ -1,0 +1,12 @@
+/* Empty state container */
+.providers__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 240px;
+  padding: 16px;
+  text-align: center;
+  line-height: 1.4;
+  color: var(--regular-tetriary-content, #bababa);
+}

@@ -1,0 +1,5 @@
+.popoverItem {
+  cursor: pointer;
+  gap: 8px;
+  align-items: center;
+}

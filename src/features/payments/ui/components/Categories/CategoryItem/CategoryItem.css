@@ -1,0 +1,108 @@
+/* Light theme overrides */
+[data-mantine-color-scheme='light'] {
+  .category__img--icon {
+    color: var(--neutral-900);
+  }
+
+  /* Hover only desktop */
+  @media (hover: hover) and (pointer: fine) {
+    .category--active .category__img--icon,
+    .category:hover .category__img--icon {
+      color: var(--brand-700);
+    }
+
+    .category--active .category__title,
+    .category:hover .category__title {
+      color: var(--brand-700);
+    }
+  }
+}
+
+/* Category row */
+.category {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.4vw, 12px);
+  flex: 1 1 auto;
+  color: var(--regular-primary-content);
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.category__img {
+  flex: 0 0 clamp(28px, 3vw, 32px);
+  width: clamp(28px, 3vw, 32px);
+  height: clamp(28px, 3vw, 32px);
+  border-radius: 50%;
+  background: var(--elevated-bg-2);
+}
+
+.category__img--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--regular-primary-content);
+  transition: color 0.3s ease;
+}
+
+.category__img--icon svg {
+  width: clamp(14px, 1.8vw, 16px);
+  height: clamp(14px, 1.8vw, 16px);
+}
+
+/* Hover */
+@media (hover: hover) and (pointer: fine) {
+  .category:hover .category__img--icon,
+  .category--active .category__img--icon {
+    color: var(--brand-500, #d9fe43);
+  }
+
+  .category:hover .category__title,
+  .category--active .category__title {
+    color: var(--brand-500, #d9fe43);
+  }
+}
+
+/* Titles */
+.category__title {
+  font-family: var(--second-family);
+  font-weight: 700;
+  font-size: clamp(10px, calc((14 / 1440) * 100vw), 14px);
+  line-height: 129%;
+  letter-spacing: -0.01em;
+  color: var(--regular-primary-content, #ffffff);
+}
+
+.category__title--loading {
+  width: 100%;
+  height: 14px;
+  border-radius: 12px;
+  background: var(--elevated-bg-2);
+}
+
+/* Mobile: icons only */
+@media (max-width: 601px) {
+  .category {
+    gap: 8px;
+    justify-content: center;
+    flex: 0 0 auto;
+    max-height: 32px;
+    background: var(--regular-bg-2, #272727);
+    border-radius: 1000px;
+    padding: 6px 16px;
+    align-items: center;
+  }
+
+  .category__img--icon {
+    background-color: transparent;
+  }
+
+  .category--active {
+    background: var(--brand-500);
+  }
+
+  .category--active .category__title,
+  .category--active .category__img--icon {
+    color: var(--alpha-50);
+  }
+}

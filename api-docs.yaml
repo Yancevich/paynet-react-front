@@ -1,0 +1,3038 @@
+openapi: 3.0.1
+info:
+  title: Payment Service API
+  description: |
+    Payment Service API provides a facade for Paynet payment gateway integration.
+
+    ## Features
+    - **Catalog Management**: Retrieve categories, providers, and services for payment catalog navigation
+    - **Service Execution**: Execute both informational and payment services via unified endpoint
+    - **Multi-language Support**: All titles and messages support Russian, Uzbek, and English
+
+    ## Authentication
+    All endpoints require JWT Bearer Token authentication when JWT issuer is configured.
+    Include the token in the Authorization header: `Authorization: Bearer <token>`
+
+    ### Development Mode
+    In development profile, use the **Development Token** option for easy testing:
+    1. Click "Authorize" → "Development Token"
+    2. Click "Get Token" to generate a development JWT token
+    3. Token is automatically applied to all requests
+
+      ## API Structure
+      1. **GET /categories** - Get all active payment categories
+      2. **GET /{categoryId}/providers** - Get providers for a category
+      3. **GET /{providerId}/services** - Get services for a provider with request fields
+      4. **POST /{serviceId}/execute** - Execute service (info or payment)
+      5. **GET /operations/{operationId}/status** - Get operation status by ID
+      6. **POST /callbacks/payment-confirmation** - Payment confirmation callback from acquiring-service (internal)
+
+    ## Service Types
+    - **Info Services** (isPayment=false): Synchronous data retrieval/validation via Paynet API
+    - **Payment Services** (isPayment=true): Payment operation with invoice creation and operation tracking
+
+    ## Operation Workflow
+    For payment services, the workflow is:
+    1. Execute service → Creates operation with status INITIAL
+    2. Payment processing → Status changes to PENDING
+    3. Completion → Status becomes SUCCESS or FAILED
+    4. Check status → Use GET /operations/{operationId}/status to track progress
+
+    ## Important Notes
+    - **Request Fields**: The `account` field in request.fields is business data (phone/account number) for Paynet, NOT the system user ID
+    - **User ID**: System user ID is extracted from JWT token (claim "sub") and stored separately for authorization
+    - **Operation ID**: Returned from execute endpoint, used for status tracking and idempotency
+    - **All field values must be strings**: Even numeric values like amount must be sent as strings (e.g., "10000")
+
+    ## Response Format
+    All responses follow consistent structure with localized content.
+    Error responses include error codes and localized messages in Russian, Uzbek, and English.
+  contact:
+    name: Payment Service Team
+    email: support@example.com
+  license:
+    name: Proprietary
+    url: https://example.com/license
+  version: v1.0
+servers:
+- url: http://5.187.0.116:8080
+  description: API Server
+tags:
+- name: Operation Status
+  description: Operation status retrieval API
+- name: Execute
+  description: Service execution endpoint for info and payment operations
+- name: Callbacks
+  description: Payment confirmation callbacks from acquiring-service (internal API)
+- name: User Favorites
+  description: User favorite providers endpoints
+- name: Admin Catalog
+  description: Administrative catalog management endpoints
+- name: Admin Operations
+  description: Administrative operations management endpoints
+- name: Catalog
+  description: "Payment service catalog endpoints for categories, providers, and services"
+- name: User Templates
+  description: User payment template management endpoints
+paths:
+  /user/templates/{templateId}:
+    put:
+      tags:
+      - User Templates
+      summary: Update user payment template
+      description: |
+        Updates existing user payment template by its unique identifier.
+
+        **Idempotency**: PUT endpoint only updates existing templates, never creates new ones.
+        Repeated PUT requests with the same data produce the same result.
+
+        **Ownership Verification**: Users can only update their own templates.
+        Attempting to update another user's template will return 404 Not Found.
+
+        **Service Validation**: Service must be enabled (is_enabled=true), available (is_available=true),
+        and be a payment service (is_payment=true). Otherwise returns 400 Bad Request.
+
+        **Conflict Detection**: If providerId/serviceId combination changes and another template
+        already uses the same combination for this user, returns 409 Conflict.
+
+        **Validation**: All required fields (providerId, serviceId, templateData) must be provided.
+        Invalid format or missing fields return 400 Bad Request.
+      operationId: updateTemplate
+      parameters:
+      - name: templateId
+        in: path
+        description: Template identifier (UUID) to update. Must be a valid UUID format.
+          Template must belong to the authenticated user.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveTemplateRequest"
+        required: true
+      responses:
+        "200":
+          description: Template updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SaveTemplateResponse"
+        "403":
+          description: Forbidden - No access to template operations
+        "404":
+          description: Not Found - Template not found or does not belong to the authenticated
+            user
+        "409":
+          description: Conflict - Template with same providerId/serviceId combination
+            already exists for this user
+        "500":
+          description: Internal server error
+        "400":
+          description: "Bad Request - Invalid request format, missing required fields,\
+            \ provider/service not found, or service validation failed (disabled/unavailable/not\
+            \ payment)"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+    delete:
+      tags:
+      - User Templates
+      summary: Delete user payment template
+      description: |
+        Deletes user payment template by its unique identifier.
+
+        **Ownership Verification**: Users can only delete their own templates.
+        Attempting to delete another user's template will return 403 Forbidden.
+
+        **Physical Deletion**: Template is physically removed from database (not soft delete).
+        After successful deletion, template will no longer appear in GET /user/templates response.
+
+        **Validation**: Template ID must be a valid UUID format. Invalid format returns 400 Bad Request.
+      operationId: deleteTemplate
+      parameters:
+      - name: templateId
+        in: path
+        description: Template identifier (UUID) to delete. Must be a valid UUID format.
+          Template must belong to the authenticated user.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        "200":
+          description: Template deleted successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DeleteTemplateResponse"
+        "400":
+          description: Bad Request - Invalid template ID format (must be valid UUID)
+        "404":
+          description: Not Found - Template not found
+        "403":
+          description: Forbidden - Template belongs to another user or no access to
+            template operations
+        "500":
+          description: Internal server error
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /{serviceId}/execute:
+    post:
+      tags:
+      - Execute
+      summary: Execute service
+      description: |
+        Executes a payment service (info or payment operation) based on service configuration.
+
+        **Service Types**:
+        - **Info Services** (isPayment=false): Performs synchronous data retrieval/validation via Paynet API.
+          Returns SUCCESS status with response fields immediately.
+        - **Payment Services** (isPayment=true): Creates invoice in acquiring-service, initiates payment,
+          and tracks operation status. Returns operation status (INITIAL/PENDING/SUCCESS/FAILED) with operation and invoice IDs.
+
+        **Request Format**:
+        - All field values must be strings, even numeric values (e.g., amount: "10000" not 10000)
+        - Field names must match exactly the 'name' field from service's request_field configuration
+        - Common fields: "account" (phone/account number for Paynet), "amount" (for payment services)
+        - **Important**: The "account" field is business data for Paynet, NOT the system user ID
+          (user ID is extracted from JWT token separately)
+
+        **Response Format**:
+        - INFO services: status=SUCCESS, type=INFO, response fields array
+        - PAYMENT services: status (INITIAL/PENDING/SUCCESS/FAILED), type=PAYMENT, operationId, invoiceId, response fields
+        - Errors: status=FAILED, errorCode (e.g., PAYNET_105), localized error message
+
+        **Operation Tracking**:
+        After executing a payment service, use POST /operations/{operationId}/status to track payment progress.
+        The operationId is returned in the execute response.
+      operationId: executeService
+      parameters:
+      - name: serviceId
+        in: path
+        description: Service identifier to execute. Must be a positive integer. Service
+          must be enabled (is_enabled=true) and available (is_available=true).
+        required: true
+        schema:
+          minimum: 1
+          type: integer
+          format: int64
+        example: 5001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExecuteRequest"
+        required: true
+      responses:
+        "409":
+          description: Conflict - Duplicate operation attempt (idempotency violation)
+        "400":
+          description: "Bad Request - Invalid request format, missing required fields,\
+            \ or invalid serviceId"
+        "404":
+          description: "Not Found - Service not found, disabled, or unavailable"
+        "500":
+          description: Internal server error
+        "200":
+          description: Service execution completed successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ExecuteResponse"
+        "422":
+          description: "Unprocessable Entity - Paynet API error (e.g., invalid account,\
+            \ insufficient funds)"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /user/templates:
+    get:
+      tags:
+      - User Templates
+      summary: Get user payment templates
+      description: |
+        Retrieves list of user's saved payment templates for quick reuse in future transactions.
+
+        **Response Format**: Returns array of template objects, each containing:
+        - Provider information (id as vendor_id, categoryId, title, images, order)
+        - Saved payment parameters (templateData as flexible JSON structure)
+
+        **Empty Result**: Returns empty array if user has no templates (no error).
+
+        **Ordering**: Templates are ordered by creation date (newest first).
+      operationId: getUserTemplates
+      responses:
+        "200":
+          description: Successfully retrieved user templates. Returns empty array
+            if user has no templates.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/TemplatesResponse"
+        "403":
+          description: Forbidden - No access to template operations
+        "500":
+          description: Internal server error
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+    post:
+      tags:
+      - User Templates
+      summary: Save user payment template
+      description: |
+        Saves or updates user payment template for quick reuse in future transactions.
+
+        **Upsert Behavior**: If template with same providerId and serviceId exists,
+        it will be updated instead of creating a duplicate.
+
+        **Template Limit**: Maximum 100 templates per user. Attempting to create
+        more will return 409 Conflict.
+
+        **Template Data**: Flexible JSON structure containing payment parameters
+        (accountNumber, phone, amount, etc.) specific to each service.
+      operationId: saveTemplate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveTemplateRequest"
+        required: true
+      responses:
+        "201":
+          description: Template created successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SaveTemplateResponse"
+        "409":
+          description: Conflict - Template limit exceeded (maximum 100 templates per
+            user)
+        "403":
+          description: Forbidden - No access to template operations
+        "400":
+          description: "Bad Request - Invalid request format, missing required fields,\
+            \ or provider/service not found"
+        "500":
+          description: Internal server error
+        "200":
+          description: Template updated successfully (upsert behavior)
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SaveTemplateResponse"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /user/templates/{templateId}/execute:
+    post:
+      tags:
+      - User Templates
+      summary: Execute user template to pre-fill payment form
+      description: |
+        Executes user's saved template to pre-fill payment form with saved values.
+
+        **Important**: This is NOT a payment execution - it only pre-fills the form
+        for user review and editing. No operation/transaction is created.
+
+        **Response Format**: Returns service metadata (id, provider_id, title) and
+        form fields with pre-filled values from template_data.
+
+        **Service Validation**: Service must be enabled (is_enabled=true) and
+        available (is_available=true). Otherwise returns 403 Forbidden.
+
+        **Ownership Verification**: Users can only execute their own templates.
+        Attempting to execute another user's template will return 404 Not Found.
+      operationId: executeTemplate
+      parameters:
+      - name: templateId
+        in: path
+        description: Template identifier (UUID) to execute. Must be a valid UUID format.
+          Template must belong to the authenticated user.
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        "200":
+          description: Successfully pre-filled form with template data
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ExecuteTemplateResponse"
+        "403":
+          description: Forbidden - Service unavailable (disabled or not available)
+            or no access to template operations
+        "404":
+          description: Not Found - Template not found or does not belong to the authenticated
+            user
+        "500":
+          description: Internal server error
+        "400":
+          description: Bad Request - Invalid template data format
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /callbacks/payment-confirmation:
+    post:
+      tags:
+      - Callbacks
+      summary: Payment confirmation callback
+      description: |
+        Receives payment confirmation callback from acquiring-service.
+
+        **Workflow**:
+        1. If status is FAILED → Set operation status to FAILED
+        2. If status is SUCCESS → Call Paynet /v2/transaction API with saved request fields
+        3. Process Paynet response according to error_codes table
+        4. If Paynet error code is missing → Record it and set operation status to FAILED
+        5. On success → Update operation status, increment user_favorites score, save recent accounts, enrich response_data
+
+        **This is an internal endpoint** for inter-service communication.
+      operationId: paymentConfirmationCallback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentCallbackRequest"
+        required: true
+      responses:
+        "200":
+          description: Callback processed successfully
+        "404":
+          description: Operation not found for given invoiceId
+        "500":
+          description: Internal server error during callback processing
+        "400":
+          description: Invalid callback request data
+  /admin/operations/export:
+    post:
+      tags:
+      - Admin Operations
+      summary: Export operations to file
+      description: |
+        Initiates asynchronous export of operations to CSV or XLSX file.
+
+        **Asynchronous Processing**: Export is processed asynchronously. Returns immediately with export ID.
+        Client should poll GET /admin/operations/exports to check status and get file URL.
+
+        **Filtering**: Supports all filters from GET /admin/operations endpoint.
+
+        **Formats**: CSV or XLSX
+
+        **Rate Limiting**: Maximum 5 concurrent exports per user (configurable).
+
+        **File Size Limit**: Maximum 1,000,000 rows per export (configurable).
+
+        **File TTL**: Exported files are available for 24 hours (configurable), then automatically deleted.
+      operationId: exportOperations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportOperationsRequest"
+        required: true
+      responses:
+        "403":
+          description: Forbidden - User does not have admin permissions or rate limit
+            exceeded
+        "500":
+          description: Internal server error
+        "202":
+          description: Export request accepted and processing started
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ExportOperationsResponse"
+        "400":
+          description: "Bad Request - Invalid request parameters (e.g., invalid date\
+            \ range, invalid format)"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/providers/{providerId}:
+    patch:
+      tags:
+      - Admin Catalog
+      summary: Update provider data
+      description: |
+        Updates provider data by vendor ID (external Paynet ID).
+
+        **Partial Update (PATCH semantics)**: Only provided fields in request are updated.
+        Other fields remain unchanged. This allows flexible updates without requiring all fields.
+
+        **Updatable Fields**:
+        - title: Localized titles in Russian, Uzbek, and English (at least one language required)
+        - order: Display order for sorting within category (must be >= 1)
+        - images: Provider images including vendor logo and custom theme variants (valid URL format or empty string to clear)
+        - isEnabled: Enable/disable provider (boolean)
+
+        **Automatic Updates**:
+        - updated_at timestamp is automatically updated when any field is changed
+
+        **Validation**:
+        - order: must be >= 1 if provided
+        - images: URLs must be valid HTTP/HTTPS URL format if provided
+        - title: at least one language (ru, uz, or en) must be provided if title is specified
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_WRITE permission.
+      operationId: updateProvider
+      parameters:
+      - name: providerId
+        in: path
+        description: "Provider vendor ID (external Paynet ID, NOT internal UUID).\
+          \ This is the external Paynet provider ID used for API operations."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 5001
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProviderRequest"
+        required: true
+      responses:
+        "404":
+          description: Not Found - Provider with specified vendor ID not found
+        "400":
+          description: "Bad Request - Invalid request format, validation failed (order\
+            \ < 1, invalid URL format, empty title, etc.)"
+        "200":
+          description: Provider updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UpdateProviderResponse"
+        "500":
+          description: Internal server error
+        "403":
+          description: Forbidden - User does not have admin write permissions
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/fields/response/{fieldId}:
+    patch:
+      tags:
+      - Admin Catalog
+      summary: Update response field
+      description: |
+        Updates response field (output field) data by sequential field ID.
+
+        **Partial Update (PATCH semantics)**: Only provided fields in request are updated.
+        Other fields remain unchanged.
+
+        **Field ID**: Sequential number (1, 2, 3...) based on order in sorted list,
+        not the internal database UUID.
+
+        **Service ID**: Required query parameter to identify which service the field belongs to.
+
+        **Automatic Updates**: The updated_at timestamp is automatically updated when any field is modified.
+
+        **Validation**:
+        - order: must be >= 1 if provided
+        - fieldSize: must be > 0 if provided
+        - label: at least one language (ru, uz, or en) should be provided if label is specified
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_WRITE permission.
+      operationId: updateResponseField
+      parameters:
+      - name: fieldId
+        in: path
+        description: "Sequential field ID (1, 2, 3...) based on order in sorted list.\
+          \ This is NOT the database UUID and NOT Paynet vendor_id. It's a simple\
+          \ sequential number for API response ordering."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 12
+      - name: serviceId
+        in: query
+        description: "Service vendor ID (external Paynet ID, NOT internal UUID). Required\
+          \ to identify which service the field belongs to."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 201
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateResponseFieldRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request - Invalid fieldId format (must be >= 1) or validation
+            failed
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "404":
+          description: Not Found - Service or field not found
+        "200":
+          description: Successfully updated response field
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UpdateFieldResponse"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/fields/request/{fieldId}:
+    patch:
+      tags:
+      - Admin Catalog
+      summary: Update request field
+      description: |
+        Updates request field (input field) data by sequential field ID.
+
+        **Partial Update (PATCH semantics)**: Only provided fields in request are updated.
+        Other fields remain unchanged.
+
+        **Field ID**: Sequential number (1, 2, 3...) based on order in sorted list,
+        not the internal database UUID.
+
+        **Service ID**: Required query parameter to identify which service the field belongs to.
+
+        **Automatic Updates**: The updated_at timestamp is automatically updated when any field is modified.
+
+        **Validation**:
+        - order: must be >= 1 if provided
+        - fieldSize: must be > 0 if provided
+        - title: at least one language (ru, uz, or en) should be provided if title is specified
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_WRITE permission.
+      operationId: updateRequestField
+      parameters:
+      - name: fieldId
+        in: path
+        description: "Sequential field ID (1, 2, 3...) based on order in sorted list.\
+          \ This is NOT the database UUID and NOT Paynet vendor_id. It's a simple\
+          \ sequential number for API response ordering."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 12
+      - name: serviceId
+        in: query
+        description: "Service vendor ID (external Paynet ID, NOT internal UUID). Required\
+          \ to identify which service the field belongs to."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 201
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRequestFieldRequest"
+        required: true
+      responses:
+        "400":
+          description: Bad Request - Invalid fieldId format (must be >= 1) or validation
+            failed
+        "200":
+          description: Successfully updated request field
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UpdateFieldResponse"
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "404":
+          description: Not Found - Service or field not found
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/categories/{categoryId}:
+    patch:
+      tags:
+      - Admin Catalog
+      summary: Update category data
+      description: |
+        Updates category data by vendor ID (external Paynet ID).
+
+        **Partial Update (PATCH semantics)**: Only provided fields in request are updated.
+        Other fields remain unchanged. This allows flexible updates without requiring all fields.
+
+        **Updatable Fields**:
+        - title: Localized titles in Russian, Uzbek, and English (at least one language required)
+        - order: Display order for sorting (must be >= 1)
+        - customImages: URL to category custom image (valid URL format or empty string to clear)
+        - isEnabled: Enable/disable category (boolean)
+
+        **Automatic Updates**:
+        - updated_at timestamp is automatically updated when any field is changed
+
+        **Validation**:
+        - order: must be >= 1 if provided
+        - customImages: must be valid HTTP/HTTPS URL format if provided
+        - title: at least one language (ru, uz, or en) must be provided if title is specified
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_WRITE permission.
+      operationId: updateCategory
+      parameters:
+      - name: categoryId
+        in: path
+        description: "Category vendor ID (external Paynet ID, NOT internal UUID).\
+          \ This is the external Paynet category ID used for API operations."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 101
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+        required: true
+      responses:
+        "400":
+          description: "Bad Request - Invalid request format, validation failed (order\
+            \ < 1, invalid URL format, empty title, etc.)"
+        "500":
+          description: Internal server error
+        "404":
+          description: Not Found - Category with specified vendor ID not found
+        "403":
+          description: Forbidden - User does not have admin write permissions
+        "200":
+          description: Category updated successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/UpdateCategoryResponse"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /{providerId}/services:
+    get:
+      tags:
+      - Catalog
+      summary: Get services by provider
+      description: "Retrieves the list of active and available services for the specified\
+        \ provider. Services are individual payment operations (e.g., 'Mobile Payment',\
+        \ 'Balance Check') that users can execute. Only services with is_enabled=true\
+        \ and is_available=true are returned, sorted by display order. Each service\
+        \ includes all request fields with metadata needed for frontend form rendering.\
+        \ Services can be payment type (isPayment=true) or info type (isPayment=false)."
+      operationId: getServicesByProvider
+      parameters:
+      - name: providerId
+        in: path
+        description: Provider identifier to fetch services for. Must be a positive
+          integer.
+        required: true
+        schema:
+          minimum: 1
+          type: integer
+          format: int64
+        example: 9457
+      responses:
+        "400":
+          description: Bad Request - Invalid providerId format (must be >= 1)
+        "200":
+          description: Successfully retrieved services list for the provider
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ServicesResponse"
+        "404":
+          description: Not Found - Provider not found or has no active services
+        "500":
+          description: Internal server error
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /{categoryId}/providers:
+    get:
+      tags:
+      - Catalog
+      summary: Get providers by category
+      description: "Retrieves the list of active providers belonging to the specified\
+        \ category. Providers are payment service providers (e.g., mobile operators,\
+        \ ISPs) that users can select. Only providers with is_enabled=true for the\
+        \ given category are returned, sorted by display order. Each provider includes\
+        \ localized titles and image URLs for vendor logo and custom themes."
+      operationId: getProvidersByCategory
+      parameters:
+      - name: categoryId
+        in: path
+        description: Category identifier to fetch providers for. Must be a positive
+          integer.
+        required: true
+        schema:
+          minimum: 1
+          type: integer
+          format: int64
+        example: 17
+      responses:
+        "200":
+          description: Successfully retrieved providers list for the category
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProvidersResponse"
+        "404":
+          description: Not Found - Category not found or has no active providers
+        "500":
+          description: Internal server error
+        "400":
+          description: Bad Request - Invalid categoryId format (must be >= 1)
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /user/favorites:
+    get:
+      tags:
+      - User Favorites
+      summary: Get user favorite providers
+      description: |
+        Retrieves list of user's favorite providers sorted by usage score (descending).
+
+        **Ranking**: Providers are ranked by score (number of successful operations).
+        Score is incremented on each successful payment operation.
+
+        **Filtering**: Only active providers (is_enabled=true) are included in results.
+        Disabled providers are automatically excluded even if they have high scores.
+
+        **Limit**: Returns top 10 providers by default.
+
+        **Empty Result**: Returns empty array if user has no favorites or all favorite
+        providers are disabled. This is not an error condition.
+      operationId: getUserFavorites
+      responses:
+        "200":
+          description: Successfully retrieved user favorites. Returns empty array
+            if user has no favorites or all favorite providers are disabled.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/FavoritesResponse"
+        "500":
+          description: Internal server error
+        "403":
+          description: Forbidden - No access to favorites operations
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /providers/search:
+    get:
+      tags:
+      - Catalog
+      summary: Search providers by name
+      description: "Searches for payment service providers by partial match in title\
+        \ fields (Russian, Uzbek, English). Search is case-insensitive and returns\
+        \ only enabled providers sorted by display order. Query must be at least 2\
+        \ characters long. Empty or single character queries return empty result without\
+        \ error."
+      operationId: searchProviders
+      parameters:
+      - name: query
+        in: query
+        description: "Search query string for provider name. Optional parameter. If\
+          \ provided, minimum 2 characters required for search to be performed. Searches\
+          \ in Russian, Uzbek, and English title fields. Case-insensitive partial\
+          \ match. If empty, null, or shorter than 2 characters, returns empty array\
+          \ without error."
+        required: false
+        schema:
+          type: string
+        example: uztelecom
+      responses:
+        "200":
+          description: Successfully retrieved providers matching the search query.
+            Returns empty array if query is too short or no matches found.
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ProvidersResponse"
+        "400":
+          description: Bad Request - Invalid query parameter format
+        "500":
+          description: Internal server error
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /operations/{operationId}/status:
+    get:
+      tags:
+      - Operation Status
+      summary: Get operation status
+      description: |
+        Retrieves the current status of a payment operation by its ID.
+
+        **Authorization**: Only the user who created the operation can access its status.
+        User ID is extracted from JWT token (claim "sub") and compared with operation.user_id.
+
+        **Operation Statuses**:
+        - INITIAL: Operation created, payment not yet initiated
+        - PENDING: Payment in progress, awaiting completion
+        - SUCCESS: Payment completed successfully
+        - FAILED: Payment failed (check errorCode and message for details)
+        - CANCELLED: Operation was cancelled
+        - REFUNDED: Payment was refunded
+        - EXPIRED: Operation expired
+
+        **Response**: Includes operation status, type, service ID, operation ID, invoice ID,
+        and response fields with localized labels and values (if available).
+
+        **Use Case**: Frontend polls this endpoint to track payment status after executing a payment service.
+        The operationId is returned from POST /{serviceId}/execute endpoint.
+      operationId: getOperationStatus
+      parameters:
+      - name: operationId
+        in: path
+        description: "Operation identifier returned from POST /{serviceId}/execute\
+          \ endpoint. Format: UUID string (e.g., '550e8400-e29b-41d4-a716-446655440000')."
+        required: true
+        schema:
+          type: string
+        example: 550e8400-e29b-41d4-a716-446655440000
+      - name: invoiceId
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        "404":
+          description: Operation not found
+        "200":
+          description: Operation status retrieved successfully
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OperationStatusResponse"
+        "401":
+          description: User not authorized
+        "500":
+          description: Internal server error
+        "403":
+          description: User does not have access to this operation
+      security:
+      - bearerAuth: []
+  /categories:
+    get:
+      tags:
+      - Catalog
+      summary: Get all categories
+      description: "Retrieves the list of all active payment service categories. Categories\
+        \ are used for grouping providers and are sorted by display order. Only categories\
+        \ with is_enabled=true are returned. Each category includes localized titles\
+        \ (ru, uz, en) and custom theme images."
+      operationId: getCategories
+      responses:
+        "200":
+          description: Successfully retrieved categories list
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CategoriesResponse"
+        "500":
+          description: Internal server error
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/{serviceId}/fields:
+    get:
+      tags:
+      - Admin Catalog
+      summary: Get service fields for admin
+      description: |
+        Retrieves all request fields (input) and response fields (output) for a specific service
+        for administrative purposes.
+
+        **Request Fields**: Input fields that users must fill when creating a service request.
+        Includes validation rules, control types, localized labels, and display order.
+
+        **Response Fields**: Output fields that may be returned by Paynet in service response.
+        Includes field names, localized labels, display order, and enabled status.
+
+        **Sorting**: Both request and response fields are sorted by order (ascending).
+
+        **Use Cases**:
+        - Display field configuration for a service in admin panel
+        - Edit field definitions
+        - Manage field order and status
+        - Configure field validation rules
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_READ permission.
+      operationId: getAdminServiceFields
+      parameters:
+      - name: serviceId
+        in: path
+        description: "Service vendor ID (external Paynet ID, NOT internal UUID). This\
+          \ is the external Paynet service ID used for API operations."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 201
+      responses:
+        "400":
+          description: Bad Request - Invalid serviceId format (must be >= 1)
+        "404":
+          description: Not Found - Service with specified vendor ID not found
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "200":
+          description: Successfully retrieved service fields
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminServiceFieldsResponse"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/{categoryId}/providers:
+    get:
+      tags:
+      - Admin Catalog
+      summary: Get all providers for category (admin)
+      description: |
+        Retrieves the list of all payment service providers for a specific category for administrative purposes.
+
+        **Full Information**: Returns all providers including disabled ones (is_enabled=false),
+        with complete administrative fields (isEnabled, createdAt, updatedAt).
+
+        **Use Cases**:
+        - Display provider management table for a category in admin panel
+        - Edit provider records
+        - Manage provider order and status
+        - Manage provider images
+
+        **Sorting**: Providers are sorted by display order (ascending).
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_READ permission.
+      operationId: getAdminProvidersByCategory
+      parameters:
+      - name: categoryId
+        in: path
+        description: "Category vendor ID (external Paynet ID, NOT internal UUID).\
+          \ This is the external Paynet category ID used for API operations."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 1
+      responses:
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "400":
+          description: Bad Request - Invalid categoryId format (must be >= 1)
+        "404":
+          description: Not Found - Category with specified vendor ID not found
+        "200":
+          description: Successfully retrieved providers list for the category
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminProvidersResponse"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/providers/{providerId}/services:
+    get:
+      tags:
+      - Admin Catalog
+      summary: Get all services for provider (admin)
+      description: |
+        Retrieves the list of all payment services for a specific provider for administrative purposes.
+
+        **Full Information**: Returns all services including disabled ones (is_enabled=false) and
+        unavailable ones (is_available=false), with complete administrative fields
+        (isEnabled, isAvailable, createdAt, updatedAt).
+
+        **Use Cases**:
+        - Display service management table for a provider in admin panel
+        - Edit service records
+        - Manage service order and status
+        - Manage service availability
+
+        **Sorting**: Services are sorted by display order (ascending).
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_READ permission.
+      operationId: getAdminServicesByProvider
+      parameters:
+      - name: providerId
+        in: path
+        description: "Provider vendor ID (external Paynet ID, NOT internal UUID).\
+          \ This is the external Paynet provider ID used for API operations."
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 101
+      responses:
+        "400":
+          description: Bad Request - Invalid providerId format (must be >= 1)
+        "200":
+          description: Successfully retrieved services list for the provider
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminServicesResponse"
+        "404":
+          description: Not Found - Provider with specified vendor ID not found
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/operations:
+    get:
+      tags:
+      - Admin Operations
+      summary: Get operations list for admin
+      description: |
+        Retrieves paginated list of operations with filtering and sorting for administrative purposes.
+
+        **Full Information**: Returns all operation fields including RAW JSON data (requestData, responseData).
+        Operations are enriched with category and provider titles from related entities.
+
+        **Filtering**: Supports filtering by date range, status, service ID, invoice ID, operation ID,
+        channel code, and user ID. All filters are optional and can be combined.
+
+        **Pagination**: Supports configurable page size (default: 20, max: 100).
+
+        **Sorting**: Supports sorting by any field with ASC/DESC direction (default: createdAt DESC).
+
+        **Use Cases**:
+        - Viewing operation history in admin panel
+        - Filtering operations by various criteria
+        - Analyzing operation data including RAW JSON
+        - Monitoring operation statuses
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_OPERATIONS_READ permission.
+      operationId: getAdminOperations
+      parameters:
+      - name: page
+        in: query
+        description: "Page number (1-based, default: 1)"
+        required: false
+        schema:
+          type: integer
+          format: int32
+        example: 1
+      - name: pageSize
+        in: query
+        description: "Number of records per page (default: 20, max: 100)"
+        required: false
+        schema:
+          type: integer
+          format: int32
+        example: 20
+      - name: createdAtFrom
+        in: query
+        description: "Start of date range (ISO 8601 format, optional)"
+        required: false
+        schema:
+          type: string
+          format: date-time
+        example: 2025-09-12T00:00:00Z
+      - name: createdAtTo
+        in: query
+        description: "End of date range (ISO 8601 format, optional)"
+        required: false
+        schema:
+          type: string
+          format: date-time
+        example: 2025-09-12T23:59:59Z
+      - name: status
+        in: query
+        description: "Operation status filter (SUCCESS, FAILED, PENDING, CANCELLED,\
+          \ optional)"
+        required: false
+        schema:
+          type: string
+        example: SUCCESS
+      - name: serviceId
+        in: query
+        description: "Service vendor ID filter (external Paynet ID, optional)"
+        required: false
+        schema:
+          type: integer
+          format: int64
+        example: 203
+      - name: invoiceId
+        in: query
+        description: Invoice ID filter (optional)
+        required: false
+        schema:
+          type: string
+        example: INV-883421
+      - name: operationId
+        in: query
+        description: "Operation ID filter (internal operation ID from acquiring-service,\
+          \ optional)"
+        required: false
+        schema:
+          type: string
+        example: 1231-1233-1233-1233
+      - name: channelCode
+        in: query
+        description: "Channel code filter (gateway: PAYNET, OCTOGAMES, etc., optional)"
+        required: false
+        schema:
+          type: string
+        example: PAYNET
+      - name: userId
+        in: query
+        description: "User ID filter (UUID, optional)"
+        required: false
+        schema:
+          type: string
+          format: uuid
+        example: 550e8400-e29b-41d4-a716-446655440000
+      - name: sort
+        in: query
+        description: "Sort field (default: createdAt)"
+        required: false
+        schema:
+          type: string
+        example: createdAt
+      - name: order
+        in: query
+        description: "Sort direction (ASC/DESC, default: DESC)"
+        required: false
+        schema:
+          type: string
+        example: DESC
+      responses:
+        "200":
+          description: Successfully retrieved operations list for admin
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminOperationsResponse"
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "400":
+          description: "Bad Request - Invalid query parameters (e.g., invalid date\
+            \ format, invalid page size)"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/operations/exports:
+    get:
+      tags:
+      - Admin Operations
+      summary: Get list of operation exports
+      description: |
+        Retrieves list of all operation exports for the current user.
+
+        **Returns**: All exports created by authenticated user, ordered by creation date (newest first).
+
+        **Statuses**: Includes exports in all states (PENDING, PROCESSING, COMPLETED, FAILED).
+
+        **File URLs**: Only available for COMPLETED exports. Files are available for 24 hours (configurable).
+      operationId: getOperationExports
+      responses:
+        "200":
+          description: Successfully retrieved exports list
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ExportListResponse"
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+  /admin/categories:
+    get:
+      tags:
+      - Admin Catalog
+      summary: Get all categories for admin
+      description: |
+        Retrieves the list of all payment service categories for administrative purposes.
+
+        **Full Information**: Returns all categories including disabled ones (is_enabled=false),
+        with complete administrative fields (isEnabled, createdAt, updatedAt).
+
+        **Use Cases**:
+        - Display category management table in admin panel
+        - Edit category records (via PATCH /admin/categories/{id})
+        - Manage category order and status
+        - Manage category images
+
+        **Sorting**: Categories are sorted by display order (ascending).
+
+        **Authentication**: Requires admin authentication with PAYMENT_ADMIN_CATALOG_READ permission.
+      operationId: getAdminCategories
+      responses:
+        "200":
+          description: Successfully retrieved categories list for admin
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/AdminCategoriesResponse"
+        "403":
+          description: Forbidden - User does not have admin permissions
+        "500":
+          description: Internal server error
+        "404":
+          description: "Not Found - Categories not found (should not occur, returns\
+            \ empty list)"
+        "401":
+          description: Unauthorized - Missing or invalid Bearer token
+components:
+  schemas:
+    SaveTemplateRequest:
+      required:
+      - providerId
+      - serviceId
+      - templateData
+      type: object
+      properties:
+        providerId:
+          type: integer
+          description: "Provider identifier from Paynet (vendor_id). This is the external\
+            \ Paynet provider ID, NOT the internal database UUID."
+          format: int64
+          example: 9457
+        serviceId:
+          type: integer
+          description: "Service identifier from Paynet (vendor_id). This is the external\
+            \ Paynet service ID, NOT the internal database UUID."
+          format: int64
+          example: 1201
+        categoryId:
+          type: integer
+          description: Category identifier from Paynet (vendor_id). Optional field
+            for reference. This is the external Paynet category ID.
+          format: int64
+          nullable: true
+          example: 17
+        templateName:
+          type: string
+          description: User-friendly template name. Optional field for template identification
+            in UI.
+          nullable: true
+          example: Оплата Uztelecom
+        templateData:
+          type: object
+          additionalProperties:
+            type: object
+            description: "Payment parameters to be saved in template. Structure is\
+              \ flexible and service-specific. Common fields: accountNumber, phone,\
+              \ amount, contractNumber, etc. Fields must match service's request_field\
+              \ configuration."
+            example:
+              accountNumber: "123456789"
+              amount: 50000
+              phone: "+998901234567"
+          description: "Payment parameters to be saved in template. Structure is flexible\
+            \ and service-specific. Common fields: accountNumber, phone, amount, contractNumber,\
+            \ etc. Fields must match service's request_field configuration."
+          example:
+            accountNumber: "123456789"
+            amount: 50000
+            phone: "+998901234567"
+      description: "Request to save user payment template. Template allows quick reuse\
+        \ of payment parameters for repeat transactions. If template with same providerId\
+        \ and serviceId exists, it will be updated (upsert behavior)."
+    SaveTemplateResponse:
+      required:
+      - created
+      - id
+      - message
+      - status
+      type: object
+      properties:
+        id:
+          type: string
+          description: Template identifier (UUID). This is the internal database ID
+            of the created or updated template.
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        status:
+          type: string
+          description: Operation status. Always 'success' for successful save operations.
+          example: success
+        message:
+          type: string
+          description: Human-readable message describing the operation result.
+          example: Template saved successfully
+        created:
+          type: boolean
+          description: "Indicates whether the template was created (true) or updated\
+            \ (false). Used by controller to determine HTTP status code: 201 Created\
+            \ for new templates, 200 OK for updates."
+          example: true
+      description: "Response after saving user payment template. Contains template\
+        \ identifier, operation status, and whether template was created or updated."
+    ExecuteRequest:
+      required:
+      - currency
+      - fields
+      type: object
+      properties:
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+            description: "Map of field names to field values. All values must be strings\
+              \ (e.g., amount should be \"10000\" not 10000). Field names must match\
+              \ exactly the 'name' field from service's request_field configuration.\
+              \ Required fields are determined by the service configuration."
+            example: "{\"account\":\"998901234567\",\"amount\":\"10000\"}"
+          description: "Map of field names to field values. All values must be strings\
+            \ (e.g., amount should be \"10000\" not 10000). Field names must match\
+            \ exactly the 'name' field from service's request_field configuration.\
+            \ Required fields are determined by the service configuration."
+          example:
+            account: "998901234567"
+            amount: "10000"
+        currency:
+          pattern: "^[A-Z]{3}$"
+          type: string
+          description: "Currency code in ISO 4217 format (e.g., 'UZS', 'USD', 'EUR').\
+            \ Used for payment amount formatting and validation."
+          example: UZS
+      description: Execution request containing field values and currency code. All
+        field values must be strings. Field names must match service's request_field
+        configuration.
+    ExecuteResponse:
+      required:
+      - serviceId
+      - status
+      - type
+      type: object
+      properties:
+        status:
+          type: string
+          description: "Execution status: SUCCESS (info service completed), INITIAL\
+            \ (payment operation created), PENDING (payment in progress), FAILED (execution\
+            \ failed with error)"
+          example: SUCCESS
+          enum:
+          - SUCCESS
+          - INITIAL
+          - PENDING
+          - FAILED
+        type:
+          type: string
+          description: "Service type: INFO for information services, PAYMENT for payment\
+            \ services"
+          example: INFO
+          enum:
+          - INFO
+          - PAYMENT
+        serviceId:
+          type: integer
+          description: Service identifier that was executed
+          format: int64
+          example: 5001
+        operationId:
+          type: integer
+          description: Operation identifier. Only present for PAYMENT services. Used
+            for tracking payment status and idempotency.
+          format: int64
+          nullable: true
+          example: 120045
+        invoiceId:
+          type: string
+          description: Invoice identifier from acquiring-service. Only present for
+            PAYMENT services. Used for payment tracking.
+          nullable: true
+          example: INV-845390
+        errorCode:
+          type: string
+          description: "Error code for failed executions. Format: PAYNET_XXX for Paynet\
+            \ errors, or custom error codes. Only present when status=FAILED."
+          nullable: true
+          example: PAYNET_105
+        message:
+          $ref: "#/components/schemas/LocalizedMessage"
+        response:
+          type: array
+          description: Response fields array with localized labels and values. Mapped
+            from Paynet response according to response_field configuration. Only present
+            for successful executions (status=SUCCESS or status=INITIAL/PENDING).
+          nullable: true
+          example: []
+          items:
+            $ref: "#/components/schemas/ResponseFieldItem"
+      description: Response from service execution. Structure varies by service type
+        and execution result. INFO services return SUCCESS status with response fields.
+        PAYMENT services return operation status with operation/invoice IDs. Errors
+        return FAILED status with error code and localized message.
+    LocalizedMessage:
+      required:
+      - en
+      - ru
+      - uz
+      type: object
+      properties:
+        ru:
+          type: string
+          description: Text in Russian
+          example: Статус платежа
+        uz:
+          type: string
+          description: Text in Uzbek
+          example: To'lov holati
+        en:
+          type: string
+          description: Text in English
+          example: Payment status
+      description: "Localized message in Russian, Uzbek, and English. Used for displaying\
+        \ user-friendly labels and messages in the appropriate language."
+    ResponseFieldItem:
+      required:
+      - label
+      - value
+      type: object
+      properties:
+        label:
+          $ref: "#/components/schemas/LocalizedMessage"
+        value:
+          type: string
+          description: "Field value as string. Format depends on field type (e.g.,\
+            \ amount, date, text, status). Values come from Paynet API response or\
+            \ operation processing results."
+          example: Успешно выполнен
+      description: "Response field item with localized label and value. Used for displaying\
+        \ operation execution results (e.g., payment status, transaction details,\
+        \ account balance). Fields are mapped from operation.response_data according\
+        \ to service.response_field configuration."
+      nullable: true
+    ExecuteTemplateResponse:
+      required:
+      - fields
+      - service
+      type: object
+      properties:
+        service:
+          $ref: "#/components/schemas/ServiceInfo"
+        fields:
+          type: array
+          description: "Form fields with pre-filled values from template. Each field\
+            \ includes name, localized title, value from template_data, and metadata\
+            \ (required, read_only, type)."
+          example: []
+          items:
+            $ref: "#/components/schemas/TemplateFieldDto"
+      description: Pre-filled form structure based on user's saved template. Contains
+        service metadata and form fields with values from template. This is NOT a
+        payment execution - it only pre-fills the form for user review.
+    ServiceInfo:
+      required:
+      - id
+      - providerId
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Service identifier (vendor_id from Paynet). This is the external\
+            \ service ID, NOT the internal database UUID."
+          format: int64
+          example: 123
+        providerId:
+          type: integer
+          description: "Provider identifier (vendor_id from Paynet) this service belongs\
+            \ to. This is the external provider ID, NOT the internal database UUID."
+          format: int64
+          example: 45
+        title:
+          $ref: "#/components/schemas/TitleDto"
+      description: "Service metadata including identifier, provider ID, and localized\
+        \ title"
+    TemplateFieldDto:
+      required:
+      - name
+      - readOnly
+      - required
+      - title
+      - type
+      type: object
+      properties:
+        name:
+          type: string
+          description: Field name used in request body. Must match exactly when submitting
+            execute request.
+          example: phone
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        value:
+          type: string
+          description: "Pre-filled value from template_data. Value is always returned\
+            \ as string, even for numeric fields. May be null if field is not present\
+            \ in template_data."
+          nullable: true
+          example: "+998901234567"
+        required:
+          type: boolean
+          description: Whether this field is required for service execution
+          example: true
+        readOnly:
+          type: boolean
+          description: Whether this field is read-only (cannot be edited by user)
+          example: false
+        type:
+          type: string
+          description: "Field type (text, number, date, etc.) for frontend form rendering"
+          example: text
+      description: "Form field with pre-filled value from template_data. Includes\
+        \ field name, localized title, value from template, and metadata."
+      example: []
+    TitleDto:
+      type: object
+      properties:
+        ru:
+          type: string
+          description: Title in Russian language
+          example: Мобильная связь
+        uz:
+          type: string
+          description: Title in Uzbek language
+          example: Mobil aloqa
+        en:
+          type: string
+          description: Title in English language
+          example: Mobile communication
+      description: "Localized title in three languages: Russian (ru), Uzbek (uz),\
+        \ and English (en). All fields are optional, but at least one should be provided.\
+        \ Frontend should use the appropriate language based on user preference, falling\
+        \ back to Russian if preferred language is not available."
+    PaymentCallbackRequest:
+      required:
+      - invoiceId
+      - status
+      type: object
+      properties:
+        invoiceId:
+          type: string
+          description: Invoice identifier from acquiring-service. Used to find the
+            corresponding operation in payment-service database.
+          example: INV-845390
+        status:
+          type: string
+          description: "Payment status from acquiring-service. SUCCESS: Payment was\
+            \ successful, proceed with Paynet transaction. FAILED: Payment failed,\
+            \ set operation status to FAILED."
+          example: SUCCESS
+          enum:
+          - SUCCESS
+          - FAILED
+      description: Payment confirmation callback from acquiring-service. Notifies
+        payment-service about invoice payment status (success or failure). This is
+        an internal endpoint for inter-service communication.
+    ExportOperationsRequest:
+      required:
+      - format
+      type: object
+      properties:
+        createdAtFrom:
+          type: string
+          description: Start of date range for filtering operations (ISO 8601 format)
+          format: date-time
+          example: 2025-09-01T00:00:00Z
+        createdAtTo:
+          type: string
+          description: End of date range for filtering operations (ISO 8601 format)
+          format: date-time
+          example: 2025-09-30T23:59:59Z
+        status:
+          type: string
+          description: "Operation status filter (SUCCESS, FAILED, PENDING, CANCELLED,\
+            \ optional)"
+          example: SUCCESS
+        serviceId:
+          type: integer
+          description: "Service vendor ID filter (external Paynet ID, optional)"
+          format: int64
+          example: 201
+        invoiceId:
+          type: string
+          description: Invoice ID filter (optional)
+          example: INV-12345
+        userId:
+          type: string
+          description: "User ID filter (UUID, optional)"
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+        channelCode:
+          type: string
+          description: "Channel code filter (gateway: PAYNET, OCTOGAMES, etc., optional)"
+          example: PAYNET
+        format:
+          pattern: ^(csv|xlsx)$
+          type: string
+          description: "Export file format: 'csv' or 'xlsx'"
+          example: csv
+          enum:
+          - csv
+          - xlsx
+      description: Request for exporting operations to file (CSV or XLSX)
+    ExportOperationsResponse:
+      required:
+      - createdAt
+      - exportId
+      - status
+      type: object
+      properties:
+        exportId:
+          type: string
+          description: Export identifier for tracking export status
+          example: exp_20251008_0001
+        status:
+          type: string
+          description: Current status of the export
+          example: PENDING
+          enum:
+          - PENDING
+          - PROCESSING
+          - COMPLETED
+          - FAILED
+        createdAt:
+          type: string
+          description: Timestamp when export was created (ISO 8601)
+          format: date-time
+          example: 2025-10-08T12:00:00Z
+      description: Response after initiating operation export
+    ProviderImagesDto:
+      required:
+      - vendorImageUrl
+      type: object
+      properties:
+        vendorImageUrl:
+          type: string
+          description: URL to vendor-provided provider logo. This is the standard
+            logo from Paynet CDN. Typically required.
+          example: https://cdn.paynet.uz/images/providers/uztelecom.png
+        customLight:
+          type: string
+          description: URL to custom provider image for light theme. Used when application
+            is in light mode. Optional.
+          nullable: true
+          example: https://cdn.paynet.uz/custom/light/uztelecom.png
+        customDark:
+          type: string
+          description: URL to custom provider image for dark theme. Used when application
+            is in dark mode. Optional.
+          nullable: true
+          example: https://cdn.paynet.uz/custom/dark/uztelecom.png
+      description: "Provider images: vendor logo and optional custom theme variants.\
+        \ Vendor image is the standard provider logo from Paynet CDN. Custom images\
+        \ are optional and may be null if not configured."
+    UpdateProviderRequest:
+      type: object
+      properties:
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: "Display order for sorting providers within category. Lower\
+            \ values appear first. Optional field. If provided, must be >= 1."
+          format: int32
+          nullable: true
+          example: 2
+        images:
+          $ref: "#/components/schemas/ProviderImagesDto"
+        isEnabled:
+          type: boolean
+          description: "Whether this provider is enabled and visible to users. Optional\
+            \ field. If provided, must be a boolean value (true or false). Disabled\
+            \ providers (isEnabled=false) are hidden from regular catalog endpoints\
+            \ but visible in admin endpoints for management purposes."
+          nullable: true
+          example: true
+      description: "Request to update provider data. All fields are optional for partial\
+        \ updates (PATCH semantics). Only provided fields will be updated, other fields\
+        \ remain unchanged."
+    AdminProviderResponseDto:
+      required:
+      - createdAt
+      - id
+      - images
+      - isEnabled
+      - order
+      - title
+      - updatedAt
+      - vendorId
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Provider identifier from Paynet (vendor_id). This is the external\
+            \ Paynet provider ID, NOT the internal database UUID. Internal UUIDs are\
+            \ never exposed in API responses."
+          format: int64
+          example: 101
+        vendorId:
+          type: integer
+          description: Provider vendor identifier from Paynet (same as id). This is
+            the external Paynet provider ID used for API operations.
+          format: int64
+          example: 5001
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting providers within category. Lower
+            values appear first.
+          format: int32
+          example: 1
+        images:
+          $ref: "#/components/schemas/ProviderImagesDto"
+        isEnabled:
+          type: boolean
+          description: Whether this provider is enabled and visible to users. Disabled
+            providers (isEnabled=false) are hidden from regular catalog endpoints
+            but visible in admin endpoints for management purposes.
+          example: true
+        createdAt:
+          type: string
+          description: Timestamp when provider was created in the system
+          format: date-time
+          example: 2025-06-01T09:00:00Z
+        updatedAt:
+          type: string
+          description: Timestamp when provider was last updated
+          format: date-time
+          example: 2025-09-25T12:40:00Z
+      description: Admin provider response with full information including administrative
+        fields. Contains all provider data needed for administrative operations and
+        editing.
+      example: []
+    UpdateProviderResponse:
+      required:
+      - provider
+      type: object
+      properties:
+        provider:
+          $ref: "#/components/schemas/AdminProviderResponseDto"
+      description: Response after successfully updating a provider. Contains the updated
+        provider with full administrative information.
+    UpdateResponseFieldRequest:
+      type: object
+      properties:
+        label:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: "Display order for sorting fields. Lower values appear first.\
+            \ Optional field. If provided, must be >= 1."
+          format: int32
+          nullable: true
+          example: 2
+        isEnabled:
+          type: boolean
+          description: "Whether this field is enabled and visible to users. Optional\
+            \ field. If provided, must be a boolean value (true or false). Disabled\
+            \ fields (isEnabled=false) are hidden from regular endpoints but visible\
+            \ in admin endpoints for management purposes."
+          nullable: true
+          example: true
+        fieldControl:
+          type: string
+          description: "Field control type (e.g., 'input', 'select', 'textarea').\
+            \ Optional field. If provided, must be a valid control type."
+          nullable: true
+          example: input
+        fieldSize:
+          minimum: 1
+          type: integer
+          description: "Field size (maximum length or width). Optional field. If provided,\
+            \ must be > 0."
+          format: int32
+          nullable: true
+          example: 12
+        fieldValues:
+          type: string
+          description: "Field values (JSON array for select/dropdown fields). Optional\
+            \ field. If provided, must be valid JSON array. If null is provided, field\
+            \ values will be cleared."
+          nullable: true
+      description: "Request to update response field data. All fields are optional\
+        \ for partial updates (PATCH semantics). Only provided fields will be updated,\
+        \ other fields remain unchanged."
+    AdminRequestFieldDto:
+      required:
+      - fieldControl
+      - fieldSize
+      - fieldType
+      - id
+      - isCustomerId
+      - name
+      - order
+      - readOnly
+      - required
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Sequential field identifier (1, 2, 3...) assigned based on\
+            \ position in sorted list. This is NOT the database UUID and NOT Paynet\
+            \ vendor_id. It's a simple sequential number for API response ordering.\
+            \ Database uses UUID internally, but API exposes sequential IDs for compatibility."
+          format: int64
+          example: 1
+        name:
+          type: string
+          description: Field name used in request body. Must match exactly when submitting
+            execute request.
+          example: phoneNumber
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        required:
+          type: boolean
+          description: Whether this field is required for service execution
+          example: true
+        readOnly:
+          type: boolean
+          description: Whether this field is read-only (cannot be edited by user)
+          example: false
+        fieldType:
+          type: string
+          description: "Field data type: string, decimal, number, date, etc. Used\
+            \ for validation and formatting."
+          example: string
+        fieldControl:
+          type: string
+          description: "UI control type for rendering: input, select, datepicker,\
+            \ etc. Determines which frontend component to use."
+          example: input
+        fieldSize:
+          minimum: 1
+          type: integer
+          description: "Maximum field size (character length for strings, precision\
+            \ for numbers)"
+          format: int32
+          example: 12
+        fieldValues:
+          type: string
+          description: "JSON string containing available values for SELECT controls.\
+            \ Format: JSON object or array. Null for non-SELECT fields."
+          nullable: true
+          example: "null"
+        isCustomerId:
+          type: boolean
+          description: Whether this field represents customer identifier. Used for
+            user favorites and history tracking.
+          example: true
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting fields in form. Lower values appear
+            first.
+          format: int32
+          example: 1
+      description: Request field definition with full metadata for administrative
+        field management. Represents an input field that users must fill when creating
+        a service request.
+    AdminResponseFieldDto:
+      required:
+      - fieldName
+      - id
+      - isEnabled
+      - label
+      - order
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Sequential field identifier (1, 2, 3...) assigned based on\
+            \ position in sorted list. This is NOT the database UUID and NOT Paynet\
+            \ vendor_id. It's a simple sequential number for API response ordering.\
+            \ Database uses UUID internally, but API exposes sequential IDs for compatibility."
+          format: int64
+          example: 1
+        fieldName:
+          type: string
+          description: Field name as returned by Paynet API. This name is used to
+            extract field value from Paynet response.
+          example: abonentName
+        label:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting fields in response. Lower values
+            appear first.
+          format: int32
+          example: 1
+        isEnabled:
+          type: boolean
+          description: Whether this field is enabled and should be displayed in response.
+            Disabled fields (isEnabled=false) are not included in service responses.
+          example: true
+      description: Response field definition with full metadata for administrative
+        field management. Represents an output field that may be returned by Paynet
+        in service response.
+    UpdateFieldResponse:
+      required:
+      - id
+      - serviceId
+      - type
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Updated field ID (sequential number from API, not database\
+            \ UUID)"
+          format: int64
+          example: 12
+        serviceId:
+          type: integer
+          description: "Service vendor ID (external Paynet ID, NOT internal UUID)"
+          format: int64
+          example: 201
+        type:
+          type: string
+          description: "Field type: 'request' for input fields, 'response' for output\
+            \ fields"
+          example: request
+        requestField:
+          $ref: "#/components/schemas/AdminRequestFieldDto"
+        responseField:
+          $ref: "#/components/schemas/AdminResponseFieldDto"
+        updatedAt:
+          type: string
+          description: Timestamp when field was last updated
+          format: date-time
+          example: 2025-10-08T08:30:00Z
+      description: Response after successfully updating a field. Contains the updated
+        field with full administrative information.
+    UpdateRequestFieldRequest:
+      type: object
+      properties:
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        required:
+          type: boolean
+          description: "Whether this field is required when submitting service request.\
+            \ Optional field. If provided, must be a boolean value (true or false)."
+          nullable: true
+          example: true
+        readOnly:
+          type: boolean
+          description: "Whether this field is read-only (cannot be edited by user).\
+            \ Optional field. If provided, must be a boolean value (true or false)."
+          nullable: true
+          example: false
+        fieldType:
+          type: string
+          description: "Field type (e.g., 'string', 'decimal', 'integer'). Optional\
+            \ field. If provided, must be a valid field type."
+          nullable: true
+          example: string
+        fieldControl:
+          type: string
+          description: "Field control type (e.g., 'input', 'select', 'textarea').\
+            \ Optional field. If provided, must be a valid control type."
+          nullable: true
+          example: input
+        fieldSize:
+          minimum: 1
+          type: integer
+          description: "Field size (maximum length or width). Optional field. If provided,\
+            \ must be > 0."
+          format: int32
+          nullable: true
+          example: 12
+        fieldValues:
+          type: string
+          description: "Field values (JSON array for select/dropdown fields). Optional\
+            \ field. If provided, must be valid JSON array. If null is provided, field\
+            \ values will be cleared."
+          nullable: true
+        order:
+          minimum: 1
+          type: integer
+          description: "Display order for sorting fields. Lower values appear first.\
+            \ Optional field. If provided, must be >= 1."
+          format: int32
+          nullable: true
+          example: 1
+      description: "Request to update request field data. All fields are optional\
+        \ for partial updates (PATCH semantics). Only provided fields will be updated,\
+        \ other fields remain unchanged."
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: "Display order for sorting categories. Lower values appear\
+            \ first. Optional field. If provided, must be >= 1."
+          format: int32
+          nullable: true
+          example: 2
+        customImages:
+          pattern: ^(https?://.+)?$
+          type: string
+          description: "URL to category custom image. Optional field. If provided,\
+            \ must be a valid URL format. Typically hosted on CDN (e.g., cdn.paynet.uz).\
+            \ This field maps to custom_dark_image_url in database. If null is provided,\
+            \ the image URL will be cleared."
+          nullable: true
+          example: https://cdn.paynet.uz/images/categories/dark/mobile.png
+        isEnabled:
+          type: boolean
+          description: "Whether this category is enabled and visible to users. Optional\
+            \ field. If provided, must be a boolean value (true or false). Disabled\
+            \ categories (isEnabled=false) are hidden from regular catalog endpoints\
+            \ but visible in admin endpoints for management purposes."
+          nullable: true
+          example: true
+      description: "Request to update category data. All fields are optional for partial\
+        \ updates (PATCH semantics). Only provided fields will be updated, other fields\
+        \ remain unchanged."
+    AdminCategoryResponseDto:
+      required:
+      - createdAt
+      - id
+      - isEnabled
+      - order
+      - title
+      - updatedAt
+      - vendorId
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Category identifier from Paynet (vendor_id). This is the external\
+            \ Paynet category ID, NOT the internal database UUID. Internal UUIDs are\
+            \ never exposed in API responses."
+          format: int64
+          example: 1
+        vendorId:
+          type: integer
+          description: Category vendor identifier from Paynet (same as id). This is
+            the external Paynet category ID used for API operations.
+          format: int64
+          example: 101
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting categories. Lower values appear first.
+          format: int32
+          example: 1
+        customImages:
+          type: string
+          description: "URL to category custom image. Image is optional and may be\
+            \ null if not configured. Typically hosted on CDN (e.g., cdn.paynet.uz)."
+          nullable: true
+          example: https://cdn.paynet.uz/images/categories/dark/mobile.png
+        isEnabled:
+          type: boolean
+          description: Whether this category is enabled and visible to users. Disabled
+            categories (isEnabled=false) are hidden from regular catalog endpoints
+            but visible in admin endpoints for management purposes.
+          example: true
+        createdAt:
+          type: string
+          description: Timestamp when category was created in the system
+          format: date-time
+          example: 2025-10-08T08:00:00Z
+        updatedAt:
+          type: string
+          description: Timestamp when category was last updated
+          format: date-time
+          example: 2025-10-08T09:00:00Z
+      description: Admin category response with full information including administrative
+        fields. Contains all category data needed for administrative operations and
+        editing.
+      example: []
+    UpdateCategoryResponse:
+      required:
+      - category
+      type: object
+      properties:
+        category:
+          $ref: "#/components/schemas/AdminCategoryResponseDto"
+      description: Response after successfully updating a category. Contains the updated
+        category with full administrative information.
+    ServiceFieldResponseDto:
+      required:
+      - fieldControl
+      - fieldSize
+      - fieldType
+      - isCustomerId
+      - name
+      - order
+      - readOnly
+      - required
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Field identifier in database. This is an internal identifier
+            and is not required for API operations. Frontend should use 'name' field
+            for field identification.
+          format: int64
+          nullable: true
+          example: 9001
+        name:
+          type: string
+          description: Field name used in request body. Must match exactly when submitting
+            execute request.
+          example: account
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        required:
+          type: boolean
+          description: Whether this field is required for service execution
+          example: true
+        readOnly:
+          type: boolean
+          description: Whether this field is read-only (cannot be edited by user)
+          example: false
+        fieldType:
+          type: string
+          description: "Field data type: STRING, NUMBER, DECIMAL, DATE, etc. Used\
+            \ for validation and formatting."
+          example: STRING
+          enum:
+          - STRING
+          - NUMBER
+          - DECIMAL
+          - DATE
+          - BOOLEAN
+        fieldControl:
+          type: string
+          description: "UI control type for rendering: TEXT_INPUT, NUMBER_INPUT, SELECT,\
+            \ DATE_PICKER, etc. Determines which frontend component to use."
+          example: TEXT_INPUT
+          enum:
+          - TEXT_INPUT
+          - NUMBER_INPUT
+          - SELECT
+          - DATE_PICKER
+          - CHECKBOX
+        fieldSize:
+          minimum: 1
+          type: integer
+          description: "Maximum field size (character length for strings, precision\
+            \ for numbers)"
+          format: int32
+          example: 20
+        fieldValues:
+          type: string
+          description: "JSON string containing available values for SELECT controls.\
+            \ Format: JSON object or array. Null for non-SELECT fields."
+          nullable: true
+          example: "null"
+        isCustomerId:
+          type: boolean
+          description: Whether this field represents customer identifier. Used for
+            user favorites and history tracking.
+          example: true
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting fields in form. Lower values appear
+            first.
+          format: int32
+          example: 1
+      description: "Request field definition with metadata for frontend form rendering.\
+        \ Each field specifies validation rules, control type, localized labels, and\
+        \ display order."
+      example: []
+    ServiceResponseDto:
+      required:
+      - fields
+      - id
+      - isPayment
+      - order
+      - providerId
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Service identifier. Mapped from vendor_id in database. This
+            is the external ID used by Paynet API.
+          format: int64
+          example: 321
+        providerId:
+          type: integer
+          description: Provider identifier this service belongs to
+          format: int64
+          example: 101
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting services within provider. Lower values
+            appear first.
+          format: int32
+          example: 1
+        parentId:
+          type: integer
+          description: Parent service ID for hierarchical services. Null for top-level
+            services.
+          format: int64
+          nullable: true
+        childId:
+          type: integer
+          description: Child service ID for multi-level services. Null if service
+            has no child.
+          format: int64
+          nullable: true
+        mcc:
+          type: string
+          description: Merchant Category Code (MCC) for payment categorization. Used
+            for transaction classification. Null for info services.
+          nullable: true
+          example: "4814"
+        isPayment:
+          type: boolean
+          description: "Service type flag: true for payment services, false for info\
+            \ services. Payment services create invoices and operations. Info services\
+            \ perform synchronous data retrieval/validation."
+          example: true
+        fields:
+          type: array
+          description: "List of request fields required for service execution. Fields\
+            \ are sorted by order and include metadata for frontend rendering: field\
+            \ type, control type, validation rules, localized labels, etc."
+          example: []
+          items:
+            $ref: "#/components/schemas/ServiceFieldResponseDto"
+      description: Payment service with request fields and metadata. Services can
+        be payment type (isPayment=true) for actual payments or info type (isPayment=false)
+        for data retrieval/validation. Each service includes all request fields needed
+        for frontend form rendering.
+      example: []
+    ServicesResponse:
+      required:
+      - services
+      type: object
+      properties:
+        services:
+          type: array
+          description: "List of active services for the provider with their request\
+            \ fields, sorted by display order"
+          example: []
+          items:
+            $ref: "#/components/schemas/ServiceResponseDto"
+      description: "Response containing list of active and available services for\
+        \ the specified provider. Services are sorted by display order (order field,\
+        \ ascending). Only services with is_enabled=true and is_available=true are\
+        \ included. Each service includes all request fields needed for frontend form\
+        \ rendering."
+    ProviderResponseDto:
+      required:
+      - categoryId
+      - id
+      - images
+      - order
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Provider identifier from Paynet (vendor_id). This is the external\
+            \ Paynet provider ID, NOT the internal database UUID. Internal UUIDs are\
+            \ never exposed in API responses."
+          format: int64
+          example: 9457
+        categoryId:
+          type: integer
+          description: "Category identifier from Paynet (vendor_id) this provider\
+            \ belongs to. This is the external Paynet category ID, NOT the internal\
+            \ database UUID."
+          format: int64
+          example: 17
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting providers within category. Lower
+            values appear first.
+          format: int32
+          example: 10
+        images:
+          $ref: "#/components/schemas/ProviderImagesDto"
+      description: Payment service provider with localized titles and images. Providers
+        belong to a category and offer multiple services.
+      example: []
+    ProvidersResponse:
+      required:
+      - providers
+      type: object
+      properties:
+        providers:
+          type: array
+          description: "List of active providers for the category, sorted by display\
+            \ order"
+          example: []
+          items:
+            $ref: "#/components/schemas/ProviderResponseDto"
+      description: "Response containing list of active providers for the specified\
+        \ category. Providers are sorted by display order (order field, ascending).\
+        \ Only providers with is_enabled=true for the category are included."
+    TemplateItemDto:
+      required:
+      - categoryId
+      - id
+      - images
+      - order
+      - templateData
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Provider identifier from Paynet (vendor_id). This is the external\
+            \ Paynet provider ID, NOT the internal database UUID. Internal UUIDs are\
+            \ never exposed in API responses."
+          format: int64
+          example: 9457
+        categoryId:
+          type: integer
+          description: "Category identifier from Paynet (vendor_id) this provider\
+            \ belongs to. This is the external Paynet category ID, NOT the internal\
+            \ database UUID."
+          format: int64
+          example: 17
+        templateData:
+          type: object
+          additionalProperties:
+            type: object
+            description: "Saved payment parameters as flexible JSON structure. Contains\
+              \ service-specific fields such as accountNumber, phone, amount, etc.\
+              \ Structure depends on the service's request_field configuration."
+            example:
+              phone: "998901234567"
+              account: "123456789"
+          description: "Saved payment parameters as flexible JSON structure. Contains\
+            \ service-specific fields such as accountNumber, phone, amount, etc. Structure\
+            \ depends on the service's request_field configuration."
+          example:
+            phone: "998901234567"
+            account: "123456789"
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting providers within category. Lower
+            values appear first.
+          format: int32
+          example: 10
+        images:
+          $ref: "#/components/schemas/ProviderImagesDto"
+      description: "Single template item containing provider information and saved\
+        \ payment parameters. The id field is the provider's Paynet vendor_id, NOT\
+        \ the internal database UUID."
+    TemplatesResponse:
+      required:
+      - providers
+      type: object
+      properties:
+        providers:
+          type: array
+          description: List of user's saved payment templates. Each template represents
+            a saved payment configuration for quick reuse. Empty array if user has
+            no templates.
+          items:
+            $ref: "#/components/schemas/TemplateItemDto"
+      description: "Response containing list of user's saved payment templates. Each\
+        \ template includes provider information (vendor_id, category_id, title, images)\
+        \ and saved payment parameters (templateData). Returns empty array if user\
+        \ has no templates."
+    FavoriteItemDto:
+      required:
+      - categoryId
+      - id
+      - images
+      - score
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Provider identifier from Paynet (vendor_id). This is the external\
+            \ Paynet provider ID, NOT the internal database UUID."
+          format: int64
+          example: 9457
+        categoryId:
+          type: integer
+          description: "Category identifier from Paynet (vendor_id) this provider\
+            \ belongs to. This is the external Paynet category ID, NOT the internal\
+            \ database UUID."
+          format: int64
+          example: 17
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        score:
+          minimum: 1
+          type: integer
+          description: Usage score - number of successful operations with this provider.
+            Higher score means provider appears higher in favorites list. Score is
+            incremented on each successful payment.
+          format: int32
+          example: 25
+        images:
+          $ref: "#/components/schemas/ProviderImagesDto"
+      description: Favorite provider item with usage score. Providers are ranked by
+        score (number of successful operations).
+      example: []
+    FavoritesResponse:
+      required:
+      - favorites
+      type: object
+      properties:
+        favorites:
+          type: array
+          description: List of favorite providers sorted by score (descending). Returns
+            empty array if user has no favorites or all favorite providers are disabled.
+          example: []
+          items:
+            $ref: "#/components/schemas/FavoriteItemDto"
+      description: Response containing user's favorite providers. Providers are sorted
+        by usage score (number of successful operations) in descending order. Only
+        active providers are included. Returns top 10 providers by default.
+    OperationStatusResponse:
+      required:
+      - serviceId
+      - status
+      - type
+      type: object
+      properties:
+        status:
+          type: string
+          description: "Current operation status. INITIAL: Operation created, payment\
+            \ not yet initiated. PENDING: Payment in progress, awaiting completion.\
+            \ SUCCESS: Payment completed successfully. FAILED: Payment failed (check\
+            \ errorCode and message for details). CANCELLED: Operation was cancelled.\
+            \ REFUNDED: Payment was refunded. EXPIRED: Operation expired."
+          example: SUCCESS
+          enum:
+          - INITIAL
+          - PENDING
+          - SUCCESS
+          - FAILED
+          - CANCELLED
+          - REFUNDED
+          - EXPIRED
+        type:
+          type: string
+          description: "Operation type: INFO for information services, PAYMENT for\
+            \ payment services. Determined from service.is_payment field."
+          example: PAYMENT
+          enum:
+          - INFO
+          - PAYMENT
+        serviceId:
+          type: integer
+          description: "Service identifier that was executed. Mapped from service.vendor_id\
+            \ in database. This is the external Paynet service ID (Long), not the\
+            \ internal UUID primary key."
+          format: int64
+          example: 5001
+        operationId:
+          type: string
+          description: "Operation identifier (operation.operationId field, String\
+            \ UUID). This is the same ID used in the endpoint path parameter. Used\
+            \ for tracking and idempotency."
+          nullable: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+        invoiceId:
+          type: string
+          description: Invoice identifier from acquiring-service. Only present for
+            payment services. Used for payment tracking and reconciliation.
+          nullable: true
+          example: INV-845390
+        response:
+          type: array
+          description: "Response fields array with localized labels and values. Mapped\
+            \ from operation.response_data according to service.response_field configuration.\
+            \ Contains operation results (e.g., payment status, transaction details).\
+            \ Only present when operation has response data."
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ResponseFieldItem"
+        amount:
+          type: number
+          description: "Operation amount in minor units (e.g., 1000 for 1000.00).\
+            \ Mapped from operation.amount field."
+          nullable: true
+          example: 1000.0
+        currency:
+          type: string
+          description: "Operation currency code (ISO 4217, 3 letters). Mapped from\
+            \ operation.currency field."
+          nullable: true
+          example: UZS
+        createdAt:
+          type: string
+          description: Operation creation timestamp in ISO-8601 format. Mapped from
+            operation.created_at field.
+          format: date-time
+          nullable: true
+          example: 2025-10-08T12:34:56.789Z
+      description: Operation status response containing current operation state and
+        related information. Response fields are populated based on service.response_field
+        configuration and operation.response_data.
+    CategoriesResponse:
+      required:
+      - categories
+      type: object
+      properties:
+        categories:
+          type: array
+          description: "List of active categories, sorted by display order"
+          example: []
+          items:
+            $ref: "#/components/schemas/CategoryResponseDto"
+      description: "Response containing list of active payment service categories.\
+        \ Categories are sorted by display order (order field, ascending). Only categories\
+        \ with is_enabled=true are included."
+    CategoryImagesDto:
+      type: object
+      properties:
+        customLight:
+          type: string
+          description: URL to category image for light theme. Used when application
+            is in light mode.
+          nullable: true
+          example: https://cdn.paynet.uz/images/categories/light/mobile.png
+        customDark:
+          type: string
+          description: URL to category image for dark theme. Used when application
+            is in dark mode.
+          nullable: true
+          example: https://cdn.paynet.uz/images/categories/dark/mobile.png
+      description: "Category images for light and dark themes. Both fields are optional\
+        \ and may be null if custom images are not configured. Images are typically\
+        \ hosted on CDN (e.g., cdn.paynet.uz)."
+    CategoryResponseDto:
+      required:
+      - id
+      - order
+      - title
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Category identifier from Paynet (vendor_id). This is the external\
+            \ Paynet category ID, NOT the internal database UUID. Internal UUIDs are\
+            \ never exposed in API responses."
+          format: int64
+          example: 17
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting categories. Lower values appear first.
+          format: int32
+          example: 1
+        images:
+          $ref: "#/components/schemas/CategoryImagesDto"
+      description: Payment service category with localized titles and theme images.
+        Categories are used to group providers for navigation in the payment catalog.
+      example: []
+    AdminServiceFieldsResponse:
+      required:
+      - requestFields
+      - responseFields
+      - serviceId
+      type: object
+      properties:
+        serviceId:
+          type: integer
+          description: Service vendor ID (external Paynet ID). This is the external
+            Paynet service ID used for API operations.
+          format: int64
+          example: 201
+        requestFields:
+          type: array
+          description: Request fields (input fields) that users must fill when creating
+            a service request. Sorted by order (ascending).
+          items:
+            $ref: "#/components/schemas/AdminRequestFieldDto"
+        responseFields:
+          type: array
+          description: Response fields (output fields) that may be returned by Paynet
+            in service response. Sorted by order (ascending).
+          items:
+            $ref: "#/components/schemas/AdminResponseFieldDto"
+      description: Service fields response containing both request fields (input)
+        and response fields (output). Both collections are sorted by order (ascending).
+        Used for administrative field management and UI configuration.
+    AdminProvidersResponse:
+      required:
+      - categoryId
+      - providers
+      type: object
+      properties:
+        categoryId:
+          type: integer
+          description: "Category identifier from Paynet (vendor_id). This is the external\
+            \ Paynet category ID, NOT the internal database UUID."
+          format: int64
+          example: 1
+        providers:
+          type: array
+          description: "List of all providers for the category (including disabled),\
+            \ sorted by display order"
+          example: []
+          items:
+            $ref: "#/components/schemas/AdminProviderResponseDto"
+      description: "Response containing list of all providers for the specified category.\
+        \ Providers are sorted by display order (order field, ascending). Includes\
+        \ both enabled and disabled providers for administrative management."
+    AdminServiceResponseDto:
+      required:
+      - createdAt
+      - id
+      - isAvailable
+      - isEnabled
+      - isPayment
+      - order
+      - title
+      - updatedAt
+      - vendorId
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Service identifier. Mapped from vendor_id in database. This
+            is the external Paynet service ID used for API operations.
+          format: int64
+          example: 201
+        vendorId:
+          type: integer
+          description: Service vendor ID (external Paynet ID). Same as id per API
+            specification.
+          format: int64
+          example: 7001
+        title:
+          $ref: "#/components/schemas/TitleDto"
+        order:
+          minimum: 1
+          type: integer
+          description: Display order for sorting services within provider. Lower values
+            appear first.
+          format: int32
+          example: 1
+        parentId:
+          type: integer
+          description: Parent service ID for hierarchical services. Null for top-level
+            services. Mapped from parent_id vendor_id in database.
+          format: int64
+          nullable: true
+        childId:
+          type: integer
+          description: Child service ID for multi-level services. Null if service
+            has no child. Mapped from child_id vendor_id in database.
+          format: int64
+          nullable: true
+        mcc:
+          type: string
+          description: Merchant Category Code (MCC) for payment categorization. Used
+            for transaction classification. Null for info services.
+          nullable: true
+          example: "4814"
+        isEnabled:
+          type: boolean
+          description: Whether this service is enabled and visible to users. Disabled
+            services (isEnabled=false) are hidden from regular catalog endpoints but
+            visible in admin endpoints for management purposes.
+          example: true
+        isAvailable:
+          type: boolean
+          description: Whether this service is available for execution. Unavailable
+            services (isAvailable=false) cannot be executed by users but are visible
+            in admin endpoints for management purposes.
+          example: true
+        isPayment:
+          type: boolean
+          description: "Service type flag: true for payment services, false for info\
+            \ services. Payment services create invoices and operations. Info services\
+            \ perform synchronous data retrieval/validation."
+          example: true
+        createdAt:
+          type: string
+          description: Service creation timestamp
+          format: date-time
+          example: 2025-06-15T10:00:00Z
+        updatedAt:
+          type: string
+          description: Service last update timestamp
+          format: date-time
+          example: 2025-09-28T15:45:00Z
+      description: Admin service response with full information including administrative
+        fields. Used for administrative service management and editing. Includes all
+        services regardless of isEnabled and isAvailable status.
+      example: []
+    AdminServicesResponse:
+      required:
+      - providerId
+      - services
+      type: object
+      properties:
+        providerId:
+          type: integer
+          description: Provider vendor ID (external Paynet ID) for which services
+            are returned
+          format: int64
+          example: 101
+        services:
+          type: array
+          description: "List of all services for the provider with full administrative\
+            \ information, sorted by display order"
+          example: []
+          items:
+            $ref: "#/components/schemas/AdminServiceResponseDto"
+      description: "Response containing list of all services for the specified provider\
+        \ with full administrative information. Services are sorted by display order\
+        \ (order field, ascending). Includes all services regardless of isEnabled\
+        \ and isAvailable status."
+    AdminOperationDto:
+      required:
+      - amount
+      - categoryTitle
+      - channelCode
+      - createdAt
+      - currency
+      - id
+      - operationId
+      - providerTitle
+      - requestData
+      - serviceId
+      - status
+      - updatedAt
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Sequential operation ID (1, 2, 3...) based on order in result\
+            \ set. This is NOT the database UUID and NOT Paynet operation_id. It's\
+            \ a simple sequential number for API response ordering."
+          format: int64
+          example: 501
+        serviceId:
+          type: integer
+          description: "Service vendor ID (external Paynet ID, NOT internal UUID)"
+          format: int64
+          example: 203
+        categoryTitle:
+          $ref: "#/components/schemas/TitleDto"
+        providerTitle:
+          $ref: "#/components/schemas/TitleDto"
+        invoiceId:
+          type: string
+          description: Invoice ID from acquiring-service
+          nullable: true
+          example: INV-883421
+        operationId:
+          type: string
+          description: Internal operation ID from acquiring-service (external operation
+            identifier)
+          example: 1231-1233-1233-1233
+        channelCode:
+          type: string
+          description: "Payment channel code (gateway). Examples: PAYNET, OCTOGAMES.\
+            \ This is the 'Payment method' displayed in admin UI."
+          example: PAYNET
+        status:
+          type: string
+          description: "Operation status: SUCCESS, FAILED, PENDING, CANCELLED"
+          example: SUCCESS
+          enum:
+          - SUCCESS
+          - FAILED
+          - PENDING
+          - CANCELLED
+        amount:
+          type: number
+          description: Operation amount
+          example: 15000.0
+        currency:
+          type: string
+          description: "Currency code (ISO 4217, 3 characters)"
+          example: UZS
+        requestData:
+          $ref: "#/components/schemas/JsonNode"
+        responseData:
+          $ref: "#/components/schemas/JsonNode"
+        createdAt:
+          type: string
+          description: Operation creation timestamp
+          format: date-time
+          example: 2025-09-12T10:45:00Z
+        updatedAt:
+          type: string
+          description: Operation last update timestamp
+          format: date-time
+          example: 2025-09-12T10:45:10Z
+      description: "Operation information for administrative purposes. Includes all\
+        \ operation fields and RAW JSON data (requestData, responseData). Enriched\
+        \ with category and provider titles from related entities."
+      example: []
+    AdminOperationsResponse:
+      required:
+      - operations
+      - page
+      - pageSize
+      - totalCount
+      type: object
+      properties:
+        page:
+          minimum: 1
+          type: integer
+          description: Current page number (1-based)
+          format: int32
+          example: 1
+        pageSize:
+          maximum: 100
+          minimum: 1
+          type: integer
+          description: Number of records per page
+          format: int32
+          example: 10
+        totalCount:
+          minimum: 0
+          type: integer
+          description: Total number of operations matching the filter criteria (across
+            all pages)
+          format: int64
+          example: 245
+        operations:
+          type: array
+          description: "List of operations for the current page, sorted by created_at\
+            \ DESC (newest first) by default"
+          example: []
+          items:
+            $ref: "#/components/schemas/AdminOperationDto"
+      description: Response containing paginated list of operations for administrative
+        purposes. Operations are sorted by created_at DESC (newest first) by default.
+        Includes all operation fields and RAW JSON data.
+    JsonNode:
+      type: object
+      description: Response data as RAW JSON (unmodified from database). This is the
+        original response data received from the service. May be null for PENDING
+        operations.
+      nullable: true
+    ExportItemDto:
+      required:
+      - createdAt
+      - exportId
+      - format
+      - status
+      type: object
+      properties:
+        exportId:
+          type: string
+          description: Export identifier
+          example: exp_20251008_0001
+        status:
+          type: string
+          description: Current status of the export
+          example: COMPLETED
+          enum:
+          - PENDING
+          - PROCESSING
+          - COMPLETED
+          - FAILED
+        createdAt:
+          type: string
+          description: Timestamp when export was created (ISO 8601)
+          format: date-time
+          example: 2025-10-08T12:00:00Z
+        completedAt:
+          type: string
+          description: "Timestamp when export was completed (ISO 8601, null if not\
+            \ completed)"
+          format: date-time
+          example: 2025-10-08T12:05:30Z
+        fileUrl:
+          type: string
+          description: URL to download the exported file (null if not completed or
+            failed)
+          example: https://storage.company/files/exp_20251008_0001.csv
+        fileSizeBytes:
+          type: integer
+          description: Size of the exported file in bytes (null if not completed)
+          format: int64
+          example: 3423423
+        format:
+          type: string
+          description: Export file format
+          example: csv
+          enum:
+          - csv
+          - xlsx
+      description: Single export item in the exports list
+    ExportListResponse:
+      required:
+      - items
+      type: object
+      properties:
+        items:
+          type: array
+          description: List of export items
+          items:
+            $ref: "#/components/schemas/ExportItemDto"
+      description: List of operation exports
+    AdminCategoriesResponse:
+      required:
+      - categories
+      type: object
+      properties:
+        categories:
+          type: array
+          description: "List of all categories (enabled and disabled), sorted by display\
+            \ order"
+          example: []
+          items:
+            $ref: "#/components/schemas/AdminCategoryResponseDto"
+      description: "Response containing list of all categories for administrative\
+        \ management. Includes both enabled and disabled categories, sorted by display\
+        \ order. Each category includes full administrative information (isEnabled,\
+        \ createdAt, updatedAt)."
+    DeleteTemplateResponse:
+      required:
+      - message
+      - status
+      type: object
+      properties:
+        status:
+          type: string
+          description: Operation status. Always 'success' for successful deletion
+            operations.
+          example: success
+        message:
+          type: string
+          description: Human-readable message describing the operation result.
+          example: Template deleted successfully
+      description: Response after deleting user payment template. Contains operation
+        status and success message.
+  securitySchemes:
+    Bearer Token:
+      type: http
+      description: |-
+        **Manual Bearer Token**
+
+        Enter a JWT token manually if you have one.
+        Paste the token without the 'Bearer ' prefix.
+
+        **Tip:** Get a token from `/admin/dev/jwt-token` endpoint first.
+      scheme: bearer
+      bearerFormat: JWT

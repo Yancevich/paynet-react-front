@@ -1,0 +1,98 @@
+:root {
+  /* Notification Defaults */
+  --notification-border-radius: 12px;
+  --notification-padding-desktop: 16px;
+  --notification-padding-mobile: 16px;
+  --notification-border-width: 1px;
+
+  /* Notification Positive */
+  --notification-positive-bg: var(--positive-bg2);
+  --notification-positive-border: var(--positive-border-2);
+  --notification-positive-icon: var(--positive-border-4);
+
+  /* Notification Destructive */
+  --notification-destructive-bg: var(--negative-bg2);
+  --notification-destructive-border: var(--negative-border-2);
+  --notification-destructive-icon: var(--negative-border-4);
+
+  /* Notification Warning */
+  --notification-warning-bg: var(--warning-bg2);
+  --notification-warning-border: var(--warning-border-2);
+  --notification-warning-icon: var(--warning-border-4);
+
+  /* Notification Info */
+  --notification-info-bg: var(--info-bg2);
+  --notification-info-border: var(--information-border-2);
+  --notification-info-icon: var(--information-border-4);
+}
+
+.root {
+  border-radius: var(--notification-border-radius);
+  border: var(--notification-border-width) solid;
+  padding: var(--notification-padding-desktop);
+  align-items: flex-start;
+
+  .icon {
+    margin-right: 8px;
+    background: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .closeButton {
+    background: none;
+    color: var(--regular-primary-content);
+
+    &:hover {
+      background: none;
+    }
+  }
+
+  &[data-variant='positive'] {
+    background-color: var(--notification-positive-bg);
+    border-color: var(--notification-positive-border);
+
+    .icon {
+      color: var(--notification-positive-icon);
+    }
+  }
+
+  &[data-variant='destructive'] {
+    background-color: var(--notification-destructive-bg);
+    border-color: var(--notification-destructive-border);
+
+    .icon {
+      color: var(--notification-destructive-icon);
+    }
+  }
+
+  &[data-variant='warning'] {
+    background-color: var(--notification-warning-bg);
+    border-color: var(--notification-warning-border);
+
+    .icon {
+      color: var(--notification-warning-icon);
+    }
+  }
+
+  &[data-variant='info'] {
+    background-color: var(--notification-info-bg);
+    border-color: var(--notification-info-border);
+
+    .icon {
+      color: var(--notification-info-icon);
+    }
+  }
+
+  @media (max-width: 568px) {
+    padding: var(--notification-padding-mobile);
+  }
+
+  .title {
+    color: var(--regular-primary-content);
+  }
+
+  .description {
+    color: var(--regular-secondary-content);
+  }
+}

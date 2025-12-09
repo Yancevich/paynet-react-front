@@ -1,0 +1,221 @@
+/* Sidebar layout */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: calc((16 / 240) * 100%);
+  padding-top: calc((24 / 240) * 100%);
+  background-color: var(--regular-bg-1);
+}
+
+/* Logo */
+.sidebar__logo {
+  padding: 0 calc((18 / 1440) * 100vw);
+}
+
+.sidebar__img {
+  aspect-ratio: 132;
+  max-width: 100%;
+  cursor: pointer;
+  color: var(--logotype-300);
+}
+
+/* Navigation */
+.sidebar__body {
+  height: 100%;
+}
+
+.navigation__list,
+.action__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+}
+
+/* Buttons */
+.sidebar-button {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: 8px;
+  padding: calc((12 / 920) * 100vh)
+    clamp(10.5px, calc((16 / 1440) * 100vw), calc((16 / 1440) * 100vw));
+  border-radius: 12px;
+  color: var(--regular-secondary-content);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-button__img {
+  aspect-ratio: 1/1;
+  width: 20px;
+  min-height: 20px;
+}
+
+.sidebar-button__title {
+  font-family: var(--font-family);
+  font-weight: 700;
+  font-size: clamp(0.625rem, calc((14 / 1440) * 100vw), 0.875rem);
+  line-height: 143%;
+  text-align: center;
+  color: inherit;
+}
+
+.sidebar__mobile-nav {
+  display: none;
+}
+
+/* Button states */
+.sidebar-button--active {
+  background: var(--regular-bg-2);
+  color: var(--brand-500);
+}
+
+.sidebar-button:hover {
+  background: var(--regular-bg-2, #2f2f2f);
+  color: var(--brand-500);
+}
+
+.sidebar-button:hover .sidebar-button__title {
+  color: var(--brand-500);
+}
+
+.sidebar-button:hover .sidebar-logo {
+  fill: var(--brand-500);
+}
+
+/* Collapsed desktop */
+.sidebar.collapsed {
+  padding: 16% 10%;
+}
+
+.sidebar.collapsed .sidebar-button {
+  gap: 0;
+  justify-content: center;
+  padding: 0;
+  aspect-ratio: 1/1;
+}
+
+.sidebar.collapsed .sidebar__logo {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-button__logo {
+  width: 20px;
+}
+
+.sidebar.collapsed .sidebar-button__title {
+  display: none;
+}
+
+/* Light theme overrides */
+[data-mantine-color-scheme='light'] {
+  .sidebar {
+    background-color: var(--elevated-bg-1);
+  }
+
+  .sidebar-button__title,
+  .sidebar-button__img {
+    color: var(--neutral-800);
+  }
+
+  .sidebar-button:hover {
+    background: var(--accent-bg3);
+  }
+
+  .sidebar-button:hover .sidebar-button__title,
+  .sidebar-button:hover .sidebar-button__img {
+    color: var(--neutral-900);
+  }
+
+  .sidebar-button--active {
+    background: var(--accent-bg3);
+
+    .sidebar-button__title,
+    .sidebar-button__img {
+      color: var(--neutral-900);
+    }
+  }
+}
+
+@media (max-width: 601px) {
+  .sidebar {
+    width: 100vw;
+    max-width: 100vw;
+    z-index: 1100;
+    border-right: none;
+    background: var(--regular-bg-1, #171717);
+    padding: 8px 20px;
+    margin-top: 0;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+
+  .sidebar.collapsed {
+    padding: 8px 20px 12px;
+  }
+
+  .sidebar__logo,
+  .sidebar__body {
+    display: none;
+  }
+
+  .navigation__list,
+  .action__list,
+  .sidebar__actions {
+    display: none;
+  }
+
+  .sidebar__mobile-nav {
+    display: flex;
+    width: 100%;
+  }
+
+  .sidebar__mobile-list {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    gap: 2px;
+  }
+
+  .sidebar__mobile-item {
+    flex: 0 1 60px;
+    list-style: none;
+    display: flex;
+    justify-content: center;
+  }
+
+  .sidebar-tab {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+    width: 100%;
+    color: var(--regular-secondary-content, #bababa);
+    font-family: var(--font-family);
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 14px;
+    height: 100%;
+    padding: 4px 0;
+    border-radius: 10px;
+  }
+
+  .sidebar-tab__icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sidebar-tab__label {
+    color: inherit;
+  }
+
+  .sidebar-tab--active {
+    color: var(--brand-500, #d9fe43);
+  }
+}

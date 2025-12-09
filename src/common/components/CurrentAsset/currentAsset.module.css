@@ -1,0 +1,33 @@
+:root {
+  --button-default-border: var(--neutral-400);
+}
+
+.root {
+  width: 100%;
+  display: flex;
+  padding-left: 16px;
+  padding-right: 16px;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px;
+  border-radius: 12px;
+  border: var(--input-border);
+  background: var(--button-secondary-bg);
+
+  &:hover {
+    border: var(--input-border-focus);
+  }
+}
+
+.info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  text-transform: capitalize;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 20px;
+}
