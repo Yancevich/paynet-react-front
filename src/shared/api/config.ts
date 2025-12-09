@@ -1,6 +1,10 @@
 import type { ApiConfig } from '@/api/http-client'
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL ?? '/api'
+// In dev we can rely on Vite proxy (`/api`). In prod (e.g. Vercel) there is no proxy,
+// so fall back to the public backend if VITE_API_URL is not provided.
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL ??
+  (import.meta.env.DEV ? '/api' : 'http://5.187.0.116:8080')
 
 /**
  * Utility helper to create a typed ApiConfig with a token provider.
