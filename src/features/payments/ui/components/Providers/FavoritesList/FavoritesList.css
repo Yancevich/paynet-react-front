@@ -17,7 +17,7 @@
   margin: 0;
   font-family: var(--second-family);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 129%;
   letter-spacing: -0.01em;
   color: var(--regular-primary-content, #ffffff);
@@ -33,7 +33,7 @@
   border-radius: 999px;
   background: var(--regular-bg-2, #272727);
   color: var(--regular-tetriary-content, #bababa);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1;
 }
 

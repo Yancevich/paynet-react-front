@@ -57,7 +57,7 @@ export const CardTopUpWidget = ({ cardId }: CardTopUpWidgetProps) => {
     }
 
     handleSelectCurrency(findCurrency);
-  }, [preselectedCurrency]);
+  }, [getCurrencyBySlug, handleSelectCurrency, preselectedCurrency, usdtCurrency]);
 
   const cardDetails = useAtomValue(cardInfoByIdAtom(cardId));
   const checkingAccounts = useAtomValue(checkingAccountsAtom);
@@ -118,7 +118,7 @@ export const CardTopUpWidget = ({ cardId }: CardTopUpWidgetProps) => {
 
   const isBalanceSufficient = useMemo(() => {
     return checkBalanceSufficient(fromAccountId, currency?.slug, amount);
-  }, [fromAccountId, currency?.slug, amount]);
+  }, [amount, checkBalanceSufficient, currency?.slug, fromAccountId]);
 
   const isDisabled = useMemo(() => {
     const isZeroAmount = new BigNumber(amount).isLessThanOrEqualTo(0);

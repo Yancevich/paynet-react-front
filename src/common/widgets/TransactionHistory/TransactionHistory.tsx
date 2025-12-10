@@ -60,7 +60,7 @@ export const TransactionHistory = ({
     return () => {
       clearFilters();
     };
-  }, []);
+  }, [clearFilters]);
 
   return (
     <>

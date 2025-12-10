@@ -24,7 +24,7 @@ export const Search = ({
     if (isAutoFocused) {
       textInputRef.current?.focus();
     }
-  }, []);
+  }, [isAutoFocused]);
 
   return (
     <TextInput

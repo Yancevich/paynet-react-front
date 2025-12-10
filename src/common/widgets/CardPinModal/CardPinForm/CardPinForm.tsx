@@ -47,17 +47,17 @@ export const CardPinForm = ({
 
   const config = CARD_PIN_MESSAGES[formStep][modalType];
 
-  const clearPinForms = () => {
+  const clearPinForms = useCallback(() => {
     setCardPin('');
     setConfirmPin('');
-  };
+  }, [setCardPin, setConfirmPin]);
 
   useEffect(() => {
     if (cardId) {
       setActiveCard(cardId);
       clearPinForms();
     }
-  }, []);
+  }, [cardId, clearPinForms, setActiveCard]);
 
   const handleCloseForm = () => {
     clearPinForms();
@@ -78,7 +78,14 @@ export const CardPinForm = ({
         setIsDisabled(pin.length !== 4 || pin !== cardPin);
       }
     },
-    [formStep, error, cardPin]
+    [
+      formStep,
+      error,
+      cardPin,
+      setCardPin,
+      setConfirmPin,
+      setIsDisabled,
+    ]
   );
 
   const handleSave = () => {

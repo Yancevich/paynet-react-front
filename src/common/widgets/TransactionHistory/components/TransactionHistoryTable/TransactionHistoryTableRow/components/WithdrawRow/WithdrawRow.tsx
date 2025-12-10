@@ -9,7 +9,6 @@ import { TableMode } from '@/common/widgets/TransactionHistory/components/Transa
 import { tableColumns } from '@/common/widgets/TransactionHistory/components/TransactionHistoryTable/TransactionHistoryTableRow/components/WithdrawRow/сonfig';
 import classes from '@/common/widgets/TransactionHistory/components/TransactionHistoryTable/TransactionHistoryTableRow/transactionHistoryTableRow.module.css';
 import { useThemeColors } from '@/theme/useThemeColors.ts';
-import { isOperaionFailed } from '../../utils';
 
 interface WithdrawRowProps {
   operationDetails: Withdraw & {

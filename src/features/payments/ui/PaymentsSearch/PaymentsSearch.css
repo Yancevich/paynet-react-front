@@ -29,14 +29,14 @@
   outline: none;
   background: transparent;
   font-family: var(--font-family);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--regular-tetriary-content, #bababa);
   cursor: inherit;
 }
 
 .search__input::placeholder {
   font-family: var(--font-family);
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--regular-tetriary-content);
   transition: all 0.1s ease;
 }

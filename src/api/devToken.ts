@@ -28,7 +28,6 @@ export const ensureDevToken = async () => {
         return token
       })
       .catch((error) => {
-        // eslint-disable-next-line no-console
         console.warn('Failed to auto-fetch dev token', error)
         return null
       })

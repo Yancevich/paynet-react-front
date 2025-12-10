@@ -63,7 +63,7 @@
 
 .templates__helper {
   font-family: var(--font-family);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 140%;
   color: var(--regular-secondary-content, #9f9f9f);
 }

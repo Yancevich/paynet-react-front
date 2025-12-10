@@ -49,7 +49,7 @@ export const VerificationGuard: FC<VerificationGuardProps> = (props) => {
     };
 
     void fetchUserInfo();
-  }, []);
+  }, [sync, userInfo]);
 
   useEffect(() => {
     if (verificationStatus) return;
@@ -67,7 +67,7 @@ export const VerificationGuard: FC<VerificationGuardProps> = (props) => {
     };
 
     void fetchStatus();
-  }, [userType, verificationStatus]);
+  }, [fetchVerificationStatus, userInfo, userType, verificationStatus]);
 
   if (isLoading) {
     return <FullScreenLoader />;

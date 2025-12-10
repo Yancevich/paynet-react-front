@@ -41,7 +41,7 @@ export const AuthGuard: FC<AuthGuardProps> = (props) => {
     };
 
     void fetchUserInfo();
-  }, []);
+  }, [sync, userInfo]);
 
   if ((token && !initialized) || loading) {
     return <FullScreenLoader />;

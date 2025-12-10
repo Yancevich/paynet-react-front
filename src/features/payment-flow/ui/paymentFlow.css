@@ -52,10 +52,10 @@
   border: none;
   color: var(--regular-primary-content, #ffffff);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.875rem;
   border-radius: 12px;
   cursor: pointer;
-  transition: color 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .provider-modal__title {
@@ -100,14 +100,14 @@
 
 .provider-modal__provider-name {
   font-weight: 700;
-  font-size: 16px;
+  font-size: 1rem;
   letter-spacing: -0.01em;
   line-height: 20px;
 }
 
 .provider-modal__provider-desc {
   color: var(--regular-secondary-content, #bababa);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 20px;
 }
 
@@ -129,7 +129,7 @@
 
 .provider-modal__label {
   font-weight: 700;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 16px;
   color: var(--regular-primary-content, #ffffff);
 }
@@ -143,7 +143,7 @@
   border: 1px solid #454545;
   background: rgba(212, 220, 234, 0.15);
   color: var(--regular-primary-content, #ffffff);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 20px;
 }
 
@@ -179,7 +179,7 @@
   outline: none;
   color: var(--regular-primary-content, #ffffff);
   flex: 1;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .provider-modal__input--with-addon select {
@@ -188,7 +188,7 @@
   outline: none;
   color: var(--regular-primary-content, #ffffff);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .provider-modal__select--transparent {
@@ -204,12 +204,12 @@
 }
 
 .provider-modal__hint {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--regular-secondary-content, #bababa);
 }
 
 .provider-modal__error {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #ff8a65;
 }
 
@@ -249,7 +249,7 @@
 }
 
 .provider-modal__details-msg {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--regular-secondary-content, #bababa);
 }
 
@@ -271,7 +271,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .provider-modal__summary-row {
@@ -279,12 +279,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 16px;
 }
 
 .provider-modal__summary-row--total {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 
@@ -307,7 +307,7 @@
   background: #d9fe43;
   color: #000000;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 20px;
   cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease;
@@ -364,7 +364,7 @@ input[type='number'] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 1.375rem;
   background: rgba(212, 220, 234, 0.12);
 }
 
@@ -378,12 +378,12 @@ input[type='number'] {
 
 .payment-status__title {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--regular-primary-content, #ffffff);
 }
 
 .payment-status__subtitle {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--regular-secondary-content, #bababa);
 }
 
@@ -402,7 +402,7 @@ input[type='number'] {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .payment-status__actions {

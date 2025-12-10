@@ -72,7 +72,9 @@ export const SelectCardListItem = ({
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  selectForDelete && selectForDelete(paymentMethod);
+                  if (selectForDelete) {
+                    selectForDelete(paymentMethod);
+                  }
                 }}
               >
                 <Icon name="trash" size={20} />

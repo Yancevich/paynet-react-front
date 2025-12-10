@@ -19,8 +19,10 @@ import { ROUTES } from '@/routes';
 import { getBannerData, VerificationLevelShorted } from './bannerInfo';
 import classes from './verificationBanner.module.css';
 
-function isVerificationType(value: any): value is VerificationType {
-  return Object.values(VerificationType).includes(value);
+function isVerificationType(value: unknown): value is VerificationType {
+  return Object.values(VerificationType).includes(
+    value as VerificationType
+  );
 }
 
 export const VerificationBanner = () => {

@@ -55,28 +55,30 @@ import {
 const Settings = () =>
   import('@/pages/Settings').then((module) => ({ default: module.Settings }));
 
-export enum Guard {
-  AuthGuard = 'AuthGuard',
-  PrivateGuard = 'PrivateGuard',
-  VerificationGuard = 'VerificationGuard',
-  UserTypeGuard = 'UserTypeGuard',
-  CardIssuingGuard = 'CardIssuingGuard',
-}
+export const GUARD = {
+  AuthGuard: 'AuthGuard',
+  PrivateGuard: 'PrivateGuard',
+  VerificationGuard: 'VerificationGuard',
+  UserTypeGuard: 'UserTypeGuard',
+  CardIssuingGuard: 'CardIssuingGuard',
+} as const;
 
 export const guardsMap = {
-  [Guard.AuthGuard]: AuthGuard,
-  [Guard.PrivateGuard]: PrivateGuard,
-  [Guard.VerificationGuard]: VerificationGuard,
-  [Guard.UserTypeGuard]: UserTypeGuard,
-  [Guard.CardIssuingGuard]: CardIssuingGuard,
+  [GUARD.AuthGuard]: AuthGuard,
+  [GUARD.PrivateGuard]: PrivateGuard,
+  [GUARD.VerificationGuard]: VerificationGuard,
+  [GUARD.UserTypeGuard]: UserTypeGuard,
+  [GUARD.CardIssuingGuard]: CardIssuingGuard,
 };
 
+export type Guard = (typeof GUARD)[keyof typeof GUARD];
+
 type GuardsPropsMap = {
-  [Guard.AuthGuard]: Omit<AuthGuardProps, 'children'>;
-  [Guard.PrivateGuard]: Omit<PrivateGuardProps, 'children'>;
-  [Guard.VerificationGuard]: Omit<VerificationGuardProps, 'children'>;
-  [Guard.UserTypeGuard]: Omit<UserTypeGuardProps, 'children'>;
-  [Guard.CardIssuingGuard]: Omit<CardIssuingGuardProps, 'children'>;
+  [GUARD.AuthGuard]: Omit<AuthGuardProps, 'children'>;
+  [GUARD.PrivateGuard]: Omit<PrivateGuardProps, 'children'>;
+  [GUARD.VerificationGuard]: Omit<VerificationGuardProps, 'children'>;
+  [GUARD.UserTypeGuard]: Omit<UserTypeGuardProps, 'children'>;
+  [GUARD.CardIssuingGuard]: Omit<CardIssuingGuardProps, 'children'>;
 };
 
 export type GuardsProps = Partial<GuardsPropsMap>;
@@ -90,14 +92,14 @@ export type EnhancedRouteObject = Omit<RouteObject, 'children'> & {
 export const routesConfig: EnhancedRouteObject[] = [
   {
     element: <KYBLayout />,
-    guards: [Guard.PrivateGuard, Guard.UserTypeGuard],
+    guards: [GUARD.PrivateGuard, GUARD.UserTypeGuard],
     guardsProps: { UserTypeGuard: { userTypes: [UserType.BUSINESS] } },
     children: [{ path: ROUTES.kyb.path, element: <Kyb /> }],
   },
 
   {
     element: <AuthLayout />,
-    guards: [Guard.AuthGuard],
+    guards: [GUARD.AuthGuard],
     children: [
       { path: ROUTES.signIn.path, element: <SignInPage /> },
       { path: ROUTES.signUp.path, element: <SignUpPage /> },
@@ -109,19 +111,19 @@ export const routesConfig: EnhancedRouteObject[] = [
 
   {
     element: <AppLayout />,
-    guards: [Guard.PrivateGuard, Guard.VerificationGuard],
+    guards: [GUARD.PrivateGuard, GUARD.VerificationGuard],
     children: [
       { path: ROUTES.index.path, element: <Home /> },
       {
         path: ROUTES.crypto.path,
         element: <BuySellCrypto />,
-        guards: [Guard.UserTypeGuard],
+        guards: [GUARD.UserTypeGuard],
         guardsProps: { UserTypeGuard: { userTypes: [UserType.CUSTOMER] } },
       },
       {
         path: `${ROUTES.crypto.path}/:operationType`,
         element: <BuySellCrypto />,
-        guards: [Guard.UserTypeGuard],
+        guards: [GUARD.UserTypeGuard],
         guardsProps: { UserTypeGuard: { userTypes: [UserType.CUSTOMER] } },
       },
       { path: ROUTES.history.path, element: <History /> },
@@ -137,7 +139,7 @@ export const routesConfig: EnhancedRouteObject[] = [
           {
             path: ROUTES.settings.nested.paymentMethods.path,
             element: <PaymentMethodsPage />,
-            guards: [Guard.UserTypeGuard],
+            guards: [GUARD.UserTypeGuard],
             guardsProps: { UserTypeGuard: { userTypes: [UserType.CUSTOMER] } },
           },
           {
@@ -184,7 +186,7 @@ export const routesConfig: EnhancedRouteObject[] = [
       {
         path: ROUTES.cards.path,
         element: <Cards />,
-        guards: [Guard.UserTypeGuard],
+        guards: [GUARD.UserTypeGuard],
         guardsProps: { UserTypeGuard: { userTypes: [UserType.CUSTOMER] } },
       },
       { path: ROUTES.card.nested.topUp.path, element: <CardTopUpPage /> },
@@ -192,7 +194,7 @@ export const routesConfig: EnhancedRouteObject[] = [
       {
         path: ROUTES.addNewCard.path,
         element: <AddNewCard />,
-        guards: [Guard.CardIssuingGuard],
+        guards: [GUARD.CardIssuingGuard],
       },
 
       { path: '*', element: <Page404 /> },

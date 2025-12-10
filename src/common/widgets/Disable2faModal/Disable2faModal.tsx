@@ -4,6 +4,10 @@ import { useIntl } from 'react-intl';
 import { Icon } from '@/common/components/Icon';
 import { useThemeColors } from '@/theme/useThemeColors.ts';
 
+declare const zE:
+  | ((...args: [string, string]) => void)
+  | undefined;
+
 interface Disable2faModalProps {
   opened: boolean;
   onClose: () => void;
@@ -15,9 +19,7 @@ export const Disable2faModal = ({ opened, onClose }: Disable2faModalProps) => {
 
   const openZendeskWidget = () => {
     if (typeof zE !== 'undefined') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       zE('messenger', 'show');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       zE('messenger', 'open');
       onClose();
     }

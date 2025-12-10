@@ -85,30 +85,30 @@ export const ReceiveBetweenAccountsWidget = ({
     if (fromCurrencyProp && fromCurrencyProp.slug !== fromCurrency?.slug) {
       handleSelectFromCurrency(fromCurrencyProp);
     }
-  }, [fromCurrencyProp]);
+  }, [fromCurrency?.slug, fromCurrencyProp, handleSelectFromCurrency]);
 
   useEffect(() => {
     if (toCurrencyProp && toCurrencyProp.slug !== toCurrency?.slug) {
       handleSelectToCurrency(toCurrencyProp);
     }
-  }, [toCurrencyProp]);
+  }, [handleSelectToCurrency, toCurrency?.slug, toCurrencyProp]);
 
   useEffect(() => {
     if (fromAccountIdProp && fromAccountIdProp !== fromAccountId) {
       handleSelectFromAccount(fromAccountIdProp);
     }
-  }, [fromAccountIdProp]);
+  }, [fromAccountId, fromAccountIdProp, handleSelectFromAccount]);
 
   useEffect(() => {
     if (toAccountIdProp && toAccountIdProp !== toAccountId) {
       handleSelectToAccount(toAccountIdProp);
     }
-  }, [toAccountIdProp]);
+  }, [handleSelectToAccount, toAccountId, toAccountIdProp]);
 
   useEffect(() => {
     resetExchange();
     return () => resetExchange();
-  }, []);
+  }, [resetExchange]);
 
   const handleReviewModalOpen = () => {
     handlers.open();

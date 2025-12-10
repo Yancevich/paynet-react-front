@@ -12,7 +12,7 @@ export const useLinks = () => {
     return routerLinks.filter(
       (link) => link.roles.includes(userType) && checkScopes(link.scopes)
     );
-  }, [userType]);
+  }, [checkScopes, userType]);
 
   const mobileAppLinks = useMemo(() => {
     return linksWithCommonFiltration.filter((link) => link.showInMobileMenu);

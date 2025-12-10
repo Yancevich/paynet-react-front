@@ -6,7 +6,8 @@ export const mapFavoriteToProvider = (
   favorite: Favorite,
   index: number
 ): Provider => {
-  const { score: _score, ...providerLike } = favorite
+  const { score, ...providerLike } = favorite
+  void score
 
   return mapProviderDto({
     ...providerLike,

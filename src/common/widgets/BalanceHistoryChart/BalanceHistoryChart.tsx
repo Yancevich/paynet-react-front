@@ -113,7 +113,7 @@ export const BalanceHistoryChart = () => {
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [history, isAccountBalanceHidden]);
+  }, [history, isAccountBalanceHidden, isLight]);
 
   if (!history?.data || history.data.length === 0) {
     return null;

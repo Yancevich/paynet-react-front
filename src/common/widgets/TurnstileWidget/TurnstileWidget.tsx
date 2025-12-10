@@ -44,7 +44,7 @@ export const TurnstileWidget = () => {
     }, 100);
 
     return () => clearInterval(interval);
-  }, [setToken]);
+  }, [locale, setId, setToken]);
 
   return (
     <Flex align="center" w="100%" direction="column">

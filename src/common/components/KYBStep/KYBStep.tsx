@@ -7,7 +7,6 @@ import { useThemeColors } from '@/theme/useThemeColors.ts';
 import classes from './kybStep.module.css';
 
 interface KYBStepProps {
-  passed?: boolean;
   text?: string;
   defaultText?: string;
   onClick?: () => void;
@@ -16,7 +15,6 @@ interface KYBStepProps {
 export const KYBStep = ({
   text,
   defaultText,
-  passed,
   onClick,
 }: KYBStepProps) => {
   const { rcc } = useThemeColors();

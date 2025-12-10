@@ -1,7 +1,7 @@
 export type RouteConfig = {
   path: string
   fullPath?: string
-  getFullPath?: (...args: any[]) => string
+  getFullPath?: (...args: unknown[]) => string
   nested?: Record<string, RouteConfig>
   meta?: {
     nav?: boolean

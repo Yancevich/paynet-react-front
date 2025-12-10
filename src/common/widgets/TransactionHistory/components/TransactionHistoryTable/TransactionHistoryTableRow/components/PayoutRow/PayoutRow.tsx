@@ -11,7 +11,6 @@ import { OperationAmountAndTime } from '../OperationAmountAndTime';
 import classes from '../../transactionHistoryTableRow.module.css';
 
 import { tableColumns } from './config.tsx';
-import { isOperaionFailed } from '../../utils.ts';
 
 interface PayoutRowProps {
   operationDetails: Payout;

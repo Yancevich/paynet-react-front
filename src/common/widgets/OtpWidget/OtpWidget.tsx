@@ -20,7 +20,7 @@ import { useThemeColors } from '@/theme/useThemeColors.ts';
 
 import styles from './OtpWidget.module.scss';
 
-export enum OtpType {
+enum OtpType {
   Email = 'email',
   Phone = 'phone',
 }

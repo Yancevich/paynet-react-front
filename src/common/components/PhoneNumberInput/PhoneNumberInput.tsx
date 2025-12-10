@@ -158,7 +158,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
     } else {
       setLocalValue(cleanedPhone);
     }
-  }, [value, isManuallyTyping]);
+  }, [value, isManuallyTyping, defaultCountry]);
 
   return (
     <Combobox

@@ -78,13 +78,13 @@ export const ExchangeWidget = ({
     if (fromCurrencyProp && fromCurrencyProp.slug !== fromCurrency?.slug) {
       handleSelectFromCurrency(fromCurrencyProp);
     }
-  }, [fromCurrencyProp]);
+  }, [fromCurrency?.slug, fromCurrencyProp, handleSelectFromCurrency]);
 
   useEffect(() => {
     if (toCurrencyProp && toCurrencyProp.slug !== toCurrency?.slug) {
       handleSelectToCurrency(toCurrencyProp);
     }
-  }, [toCurrencyProp]);
+  }, [handleSelectToCurrency, toCurrency?.slug, toCurrencyProp]);
 
   const handleReviewModalOpen = () => {
     handlers.open();
